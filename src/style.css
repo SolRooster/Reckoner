@@ -158,4 +158,22 @@ html, body {
 .weapon-name { flex: 1; font-weight: 600; }
 .weapon-kills { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
 
-.next { margin-top: 28px; color: var(--muted); font-style: italic; }
+.next { margin-top: 28px; }
+.next .subtle { margin: 10px 0 0; }
+
+/* Vault view */
+.vault { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+.vault-card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 16px;
+}
+.vault-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px;
+}
+.vault-name { font-weight: 700; font-size: 1.05rem; }
+.vault-meta { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.copy-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.copy-list li { display: flex; gap: 10px; align-items: baseline; }
+.copy-idx { color: var(--amber); font-weight: 700; font-size: 0.8rem; min-width: 2.2ch; }
+.copy-perks { color: var(--ink); font-size: 0.9rem; }

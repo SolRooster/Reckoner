@@ -6,7 +6,9 @@ import {
   getAccountStats,
   getCharacterWeaponStats,
   getItemDefinition,
+  getFullProfile,
 } from './bungie/api.js';
+import { loadItems } from './bungie/manifest.js';
 
 const app = document.querySelector('#app');
 
@@ -61,6 +63,117 @@ function renderError(message) {
     logout();
     location.href = redirectHome();
   });
+}
+
+function renderProgress(message) {
+  app.innerHTML = `
+    <div class="hero">
+      <h1 class="wordmark">RECKONER</h1>
+      <p class="tagline">${escapeHtml(message)}</p>
+      <div class="spinner"></div>
+    </div>`;
+}
+
+// ---- Milestone 2: the vault read ------------------------------------------
+
+const WEAPON_PERKS_CATEGORY = 4241085061; // "WEAPON PERKS" socket category
+const TIER_LEGENDARY = 5;
+const WEAPON_ITEM_TYPE = 3;
+
+async function scanVault(membershipType, membershipId) {
+  renderProgress('Waking the Cryptarch…');
+  try {
+    const items = await loadItems((msg) => renderProgress(msg));
+    renderProgress('Reading your vault…');
+    const profile = await getFullProfile(membershipType, membershipId);
+    const weapons = collectWeapons(profile, items);
+    renderVault(weapons);
+  } catch (e) {
+    renderError(e.message);
+  }
+}
+
+function collectWeapons(profile, items) {
+  const stacks = [];
+  stacks.push(...(profile.profileInventory?.data?.items ?? []));
+  for (const c of Object.values(profile.characterInventories?.data ?? {})) {
+    stacks.push(...(c.items ?? []));
+  }
+  for (const c of Object.values(profile.characterEquipment?.data ?? {})) {
+    stacks.push(...(c.items ?? []));
+  }
+
+  const socketData = profile.itemComponents?.sockets?.data ?? {};
+  const weapons = [];
+
+  for (const it of stacks) {
+    if (!it.itemInstanceId) continue;
+    const def = items[it.itemHash];
+    if (!def || def.itemType !== WEAPON_ITEM_TYPE || def.tier !== TIER_LEGENDARY) continue;
+    const perks = readPerks(def, socketData[it.itemInstanceId], items);
+    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, perks });
+  }
+  return weapons;
+}
+
+function readPerks(def, socketInfo, items) {
+  const cat = (def.socketCategories ?? []).find(
+    (c) => c.socketCategoryHash === WEAPON_PERKS_CATEGORY
+  );
+  const indexes = cat?.socketIndexes ?? [];
+  const sockets = socketInfo?.sockets ?? [];
+  const names = [];
+  for (const idx of indexes) {
+    const plugHash = sockets[idx]?.plugHash;
+    if (!plugHash) continue;
+    const name = items[plugHash]?.name;
+    if (name) names.push(name);
+  }
+  return names;
+}
+
+function renderVault(weapons) {
+  const byHash = new Map();
+  for (const w of weapons) {
+    if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, copies: [] });
+    byHash.get(w.hash).copies.push(w.perks);
+  }
+  const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
+
+  app.innerHTML = `
+    <header class="topbar">
+      <span class="wordmark small">RECKONER</span>
+      <button id="back" class="btn-link">&larr; Back</button>
+    </header>
+    <section class="dash">
+      <h2>Your vault: ${weapons.length} legendary weapon${weapons.length === 1 ? '' : 's'},
+        ${groups.length} unique.</h2>
+      <p class="subtle">Grouped by gun. Each line is one copy's roll. The reckoning comes next.</p>
+      <div class="vault">
+        ${groups.map(vaultCard).join('') || '<p class="subtle">No legendary weapons found.</p>'}
+      </div>
+    </section>`;
+
+  document.querySelector('#back').addEventListener('click', () => boot());
+}
+
+function vaultCard(g) {
+  const copies = g.copies
+    .map(
+      (perks, i) =>
+        `<li><span class="copy-idx">#${i + 1}</span>
+         <span class="copy-perks">${
+           perks.length ? perks.map(escapeHtml).join(' &middot; ') : 'roll unavailable'
+         }</span></li>`
+    )
+    .join('');
+  return `<div class="vault-card">
+    <div class="vault-head">
+      <span class="vault-name">${escapeHtml(g.name)}</span>
+      <span class="vault-meta">${escapeHtml(g.type || '')} &middot; &times;${g.copies.length}</span>
+    </div>
+    <ul class="copy-list">${copies}</ul>
+  </div>`;
 }
 
 // ---- Milestone 1: the API spills your secrets -----------------------------
@@ -119,13 +232,20 @@ async function renderDashboard() {
       <div class="weapon-tabs" id="weapon-tabs"></div>
       <ol class="weapon-list" id="weapon-list"></ol>
 
-      <p class="next">Next stop: pull your vault and start the reckoning.</p>
+      <div class="next">
+        <button id="scan" class="btn-primary">Scan my vault &rarr;</button>
+        <p class="subtle">Reads every legendary in your vault and lays its roll bare.</p>
+      </div>
     </section>`;
 
   document.querySelector('#logout').addEventListener('click', () => {
     logout();
     location.href = redirectHome();
   });
+
+  document
+    .querySelector('#scan')
+    .addEventListener('click', () => scanVault(membershipType, membershipId));
 
   setupWeaponTabs(weaponData);
 }

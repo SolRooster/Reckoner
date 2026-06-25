@@ -29,6 +29,9 @@ export default {
       if (url.pathname.startsWith('/api/')) {
         return await handleApiProxy(request, env, cors, url);
       }
+      if (url.pathname.startsWith('/cdn/')) {
+        return await handleCdn(cors, url);
+      }
       return json({ error: 'not_found' }, 404, cors);
     } catch (err) {
       return json({ error: 'worker_error', detail: String(err) }, 500, cors);
@@ -104,4 +107,15 @@ async function handleApiProxy(request, env, cors, url) {
     status: resp.status,
     headers: { 'Content-Type': 'application/json', ...cors },
   });
+}
+
+// Stream a public Bungie CDN file (e.g. the manifest JSON). No API key needed.
+// Client calls /cdn/common/destiny2_content/... and we proxy bungie.net/common/...
+async function handleCdn(cors, url) {
+  const path = url.pathname.replace(/^\/cdn/, '');
+  const resp = await fetch(`${BUNGIE}${path}`);
+  const headers = new Headers();
+  headers.set('Content-Type', resp.headers.get('Content-Type') || 'application/json');
+  for (const [k, v] of Object.entries(cors)) headers.set(k, v);
+  return new Response(resp.body, { status: resp.status, headers });
 }
