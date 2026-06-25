@@ -10,6 +10,8 @@ import {
 } from './bungie/api.js';
 import { loadItems } from './bungie/manifest.js';
 import { gradeGun } from './engine/verdict.js';
+import { AXES, QUESTIONS } from './assessment/questions.js';
+import { scoreAnswers, archetype, saveProfile, loadProfile } from './assessment/profile.js';
 
 const app = document.querySelector('#app');
 
@@ -232,6 +234,8 @@ async function renderDashboard() {
     <section class="dash">
       <h2>${escapeHtml(displayName)}, here's the honest record.</h2>
 
+      <div class="profile-banner" id="profile-banner"></div>
+
       <div class="split-card">
         <div class="split-row">
           <span class="split-label">PvE</span>
@@ -271,7 +275,76 @@ async function renderDashboard() {
     .querySelector('#scan')
     .addEventListener('click', () => scanVault(membershipType, membershipId, weaponData));
 
+  renderProfileBanner();
   setupWeaponTabs(weaponData);
+}
+
+// ---- Combat Assessment ("Doctrine") ---------------------------------------
+
+function renderProfileBanner() {
+  const el = document.querySelector('#profile-banner');
+  if (!el) return;
+  const profile = loadProfile();
+  if (profile) {
+    el.innerHTML = `
+      <span class="pb-label">Combat Doctrine:</span>
+      <span class="pb-archetype">${escapeHtml(archetype(profile))}</span>
+      <button id="take-assessment" class="btn-link">Retake</button>`;
+  } else {
+    el.innerHTML = `
+      <span class="pb-label">No combat profile yet.</span>
+      <button id="take-assessment" class="btn-pill">Take the Combat Assessment &rarr;</button>`;
+  }
+  el.querySelector('#take-assessment').addEventListener('click', () => renderQuestion(0, []));
+}
+
+function renderQuestion(index, answers) {
+  if (index >= QUESTIONS.length) {
+    const profile = scoreAnswers(answers);
+    saveProfile(profile);
+    return renderProfileResult(profile);
+  }
+  const q = QUESTIONS[index];
+  app.innerHTML = `
+    <section class="quiz">
+      <div class="quiz-progress">Question ${index + 1} of ${QUESTIONS.length}</div>
+      <div class="quiz-bar"><div class="quiz-fill" style="width:${
+        ((index + 1) / QUESTIONS.length) * 100
+      }%"></div></div>
+      <h2 class="quiz-q">${escapeHtml(q.q)}</h2>
+      <div class="quiz-options">
+        ${q.options
+          .map((o, i) => `<button class="quiz-option" data-i="${i}">${escapeHtml(o.text)}</button>`)
+          .join('')}
+      </div>
+    </section>`;
+  app.querySelectorAll('.quiz-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const opt = q.options[Number(btn.dataset.i)];
+      renderQuestion(index + 1, [...answers, opt]);
+    });
+  });
+}
+
+function renderProfileResult(profile) {
+  const bars = Object.entries(AXES)
+    .map(([k, ax]) => {
+      const pos = profile[k];
+      return `<div class="axis">
+        <div class="axis-poles"><span>${escapeHtml(ax.a)}</span><span>${escapeHtml(ax.b)}</span></div>
+        <div class="axis-track"><div class="axis-dot" style="left:${pos}%"></div></div>
+      </div>`;
+    })
+    .join('');
+  app.innerHTML = `
+    <section class="dash">
+      <p class="subtle">Your Combat Doctrine</p>
+      <h2 class="archetype-title">${escapeHtml(archetype(profile))}</h2>
+      <div class="axes">${bars}</div>
+      <p class="next subtle">Reckoner will start weighing your vault verdicts toward this profile.</p>
+      <button id="done" class="btn-primary">Back to the record</button>
+    </section>`;
+  document.querySelector('#done').addEventListener('click', () => boot());
 }
 
 function setupWeaponTabs(weaponData) {

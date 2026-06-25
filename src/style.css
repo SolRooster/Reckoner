@@ -97,6 +97,47 @@ html, body {
 .dash h3 { margin: 28px 0 12px; font-size: 1.1rem; }
 .subtle { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
 
+/* Combat Assessment */
+.btn-pill {
+  background: linear-gradient(180deg, var(--amber) 0%, var(--amber-soft) 100%);
+  color: #1a1205; border: none; font-weight: 700; cursor: pointer;
+  padding: 8px 16px; border-radius: 999px; font-size: 0.85rem;
+}
+.profile-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
+}
+.pb-label { color: var(--muted); font-size: 0.85rem; }
+.pb-archetype { color: var(--amber); font-weight: 700; }
+
+.quiz { max-width: 620px; margin: 6vh auto 0; }
+.quiz-progress { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.04em; }
+.quiz-bar { height: 6px; background: var(--panel-2); border-radius: 6px; overflow: hidden; margin: 8px 0 24px; }
+.quiz-fill { height: 100%; background: linear-gradient(90deg, var(--amber-soft), var(--amber)); transition: width 0.2s ease; }
+.quiz-q { font-size: 1.35rem; margin: 0 0 20px; line-height: 1.35; }
+.quiz-options { display: flex; flex-direction: column; gap: 10px; }
+.quiz-option {
+  text-align: left; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+  cursor: pointer; font-size: 0.98rem; transition: border-color 0.12s ease, transform 0.08s ease;
+}
+.quiz-option:hover { border-color: var(--amber); transform: translateY(-1px); }
+
+.archetype-title {
+  font-size: 2rem; margin: 4px 0 24px;
+  background: linear-gradient(180deg, #fff, var(--amber)); -webkit-background-clip: text;
+  background-clip: text; color: transparent;
+}
+.axes { display: flex; flex-direction: column; gap: 18px; }
+.axis-poles { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+.axis-track { position: relative; height: 8px; background: var(--panel-2); border-radius: 6px; }
+.axis-dot {
+  position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--amber); transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 4px rgba(245, 185, 66, 0.18);
+}
+
 .split-card {
   background: var(--panel);
   border: 1px solid var(--line);
