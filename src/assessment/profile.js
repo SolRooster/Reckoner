@@ -65,17 +65,29 @@ export function combined(profile, mode) {
   return { ...(profile.shared || {}), ...(profile[mode] || {}) };
 }
 
-// Title from the two axes that deviate most from neutral, for a given mode.
+// Title that pairs the strongest MODE axis (tempo/range — differentiates PvE
+// from PvP) with the strongest IDENTITY axis (engine/cadence/soul).
 export function archetype(profile, mode) {
   const c = combined(profile, mode);
-  const devs = Object.keys(AXES)
-    .filter((k) => k in c)
-    .map((k) => ({ k, dev: Math.abs(c[k] - 50), pole: c[k] >= 50 ? 'a' : 'b' }));
-  devs.sort((x, y) => y.dev - x.dev);
-  const [first, second] = devs;
-  if (!first || first.dev < 8) return 'The Generalist';
+  const pick = (keys) => {
+    let best = null;
+    for (const k of keys) {
+      if (!(k in c)) continue;
+      const dev = Math.abs(c[k] - 50);
+      if (!best || dev > best.dev) best = { k, dev, pole: c[k] >= 50 ? 'a' : 'b' };
+    }
+    return best;
+  };
+  const modePick = pick(MODE_AXES);
+  const idPick = pick(SHARED_AXES);
   const word = (d) => AXES[d.k][d.pole];
-  return `The ${word(second)} ${word(first)}`;
+
+  const haveMode = modePick && modePick.dev >= 8;
+  const haveId = idPick && idPick.dev >= 8;
+  if (!haveMode && !haveId) return 'The Generalist';
+  if (!haveMode) return `The ${word(idPick)}`;
+  if (!haveId) return `The ${word(modePick)}`;
+  return `The ${word(modePick)} ${word(idPick)}`;
 }
 
 export function isValid(profile) {

@@ -27,11 +27,19 @@ export const QUESTIONS = [
   },
   {
     section: 'shared',
-    q: 'The Division / build-craft instinct:',
+    q: 'When a game has deep build-crafting, you:',
     options: [
-      { text: 'I theorycraft synergy — perks that feed each other', axis: { engine: 2 } },
-      { text: 'I chase raw gunfeel and fundamentals', axis: { engine: -2 } },
+      { text: 'Theorycraft synergy — perks that feed each other', axis: { engine: 2 } },
+      { text: 'Chase raw gunfeel and fundamentals', axis: { engine: -2 } },
       { text: 'Whatever makes my fireteam stronger', axis: { engine: 1 } },
+    ],
+  },
+  {
+    section: 'shared',
+    q: 'Tuning a weapon, you prioritize:',
+    options: [
+      { text: 'Perks that trigger off kills and abilities (synergy)', axis: { engine: 2 } },
+      { text: 'Raw handling, reload and stability — pure feel', axis: { engine: -2 } },
     ],
   },
   {
@@ -72,7 +80,7 @@ export const QUESTIONS = [
     section: 'pve',
     q: 'Clearing a packed room of adds, you want to be:',
     options: [
-      { text: 'In the mix — close-range, fusions, Centrifuse chaos', axis: { range: 2, tempo: 1 } },
+      { text: 'In the mix — close-range fusions, shotguns, swords', axis: { range: 2, tempo: 1 } },
       { text: 'Picking them off from range — scout, pulse, wave-clear', axis: { range: -2 } },
     ],
   },
@@ -113,10 +121,10 @@ export const QUESTIONS = [
   },
   {
     section: 'pvp',
-    q: 'Special-ammo apes (shotgun/fusion) keep rushing you. You:',
+    q: 'An enemy rushes you with a shotgun. You:',
     options: [
-      { text: 'Out-range them — scout + sidearm, win before they\u2019re close', axis: { range: -2, tempo: 1 } },
-      { text: 'Meet them head-on and out-duel up close', axis: { range: 2, tempo: 1 } },
+      { text: 'Back up and out-space them with range', axis: { range: -2 } },
+      { text: 'Meet them head-on and out-duel up close', axis: { range: 2 } },
     ],
   },
   {

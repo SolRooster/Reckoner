@@ -3,43 +3,57 @@
 import { AXES } from './questions.js';
 import { combined } from './profile.js';
 
-// Perk -> axis affinities. Sign follows pole A (+) vs pole B (-) per axis:
+// Perk -> { axes, modes }. Axis sign follows pole A (+) vs pole B (-):
 // tempo +Slayer/-Anchor, range +Knife-fighter/-Sightline, engine +Architect/-Gunslinger,
-// cadence +Burst/-Sustain, soul +Showtime/-Bedrock.
-const PERK_AXES = {
-  Rampage: { tempo: 2, cadence: 1 },
-  'Kill Clip': { tempo: 1, cadence: 1 },
-  Swashbuckler: { tempo: 2, range: 1 },
-  Frenzy: { tempo: 1, cadence: -1 },
-  'Killing Wind': { tempo: 1, range: -1 },
-  Onslaught: { tempo: 1, cadence: -1 },
-  'Moving Target': { tempo: 1, range: 1 },
-  'Tap the Trigger': { tempo: 1, range: 1 },
-  'Firmly Planted': { tempo: -2 },
-  'Opening Shot': { range: -2, soul: -1 },
-  Rangefinder: { range: -2 },
-  'Zen Moment': { range: -1, soul: -1 },
-  'Rapid Hit': { range: -1, soul: -1 },
-  'Explosive Payload': { range: -1, soul: -1 },
-  'Eye of the Storm': { soul: 1, tempo: 1 },
-  'Snapshot Sights': { range: -1, soul: 1 },
-  'Threat Detector': { range: 2 },
-  'Grave Robber': { range: 2, tempo: 1 },
-  'Vorpal Weapon': { cadence: 2 },
-  'Bait and Switch': { cadence: 2, engine: 1 },
-  'High-Impact Reserves': { cadence: 1 },
-  Reconstruction: { cadence: -2 },
-  Subsistence: { cadence: -1 },
-  Overflow: { cadence: -1 },
-  'Rewind Rounds': { cadence: -1 },
-  'Target Lock': { cadence: -1, range: 1 },
-  Demolitionist: { engine: 2 },
-  Pugilist: { engine: 2, range: 1 },
-  Voltshot: { engine: 2, cadence: -1 },
-  'Repulsor Brace': { engine: 2 },
-  'Destabilizing Rounds': { engine: 1, cadence: -1 },
-  'Perpetual Motion': { tempo: 1, soul: -1 },
-  Slideshot: { tempo: 1, range: -1 },
+// cadence +Burst/-Sustain, soul +Showtime/-Bedrock. `modes` gates which mode it's
+// even eligible to be recommended in (no Bait and Switch in PvP).
+const PERKS_REC = {
+  // Aggression / momentum
+  Rampage: { axes: { tempo: 2, cadence: 1 }, modes: ['pve', 'pvp'] },
+  'Kill Clip': { axes: { tempo: 1, cadence: 1 }, modes: ['pve', 'pvp'] },
+  Swashbuckler: { axes: { tempo: 2, range: 1 }, modes: ['pve', 'pvp'] },
+  'Killing Wind': { axes: { tempo: 1, range: -1 }, modes: ['pve', 'pvp'] },
+  Slideways: { axes: { tempo: 1, soul: -1 }, modes: ['pve', 'pvp'] },
+  Kickstart: { axes: { tempo: 2 }, modes: ['pve', 'pvp'] },
+  'Moving Target': { axes: { tempo: 1, range: 1 }, modes: ['pvp'] },
+  'Tap the Trigger': { axes: { tempo: 1, range: 1 }, modes: ['pvp'] },
+  'Grave Robber': { axes: { range: 2, tempo: 1 }, modes: ['pve'] },
+  'Threat Detector': { axes: { range: 2 }, modes: ['pve', 'pvp'] },
+
+  // Anchor / control — the slow-down perks
+  'Firmly Planted': { axes: { tempo: -2 }, modes: ['pve', 'pvp'] },
+  'Slide Shot': { axes: { tempo: 1, range: -1 }, modes: ['pve', 'pvp'] },
+
+  // Range / precision / gunfeel (Gunslinger-friendly)
+  'Opening Shot': { axes: { range: -2, soul: -1, engine: -1 }, modes: ['pvp'] },
+  Rangefinder: { axes: { range: -2, engine: -1 }, modes: ['pve', 'pvp'] },
+  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
+  'Rapid Hit': { axes: { range: -1, soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
+  'Dynamic Sway Reduction': { axes: { soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
+  'Explosive Payload': { axes: { range: -1, soul: -1 }, modes: ['pve', 'pvp'] },
+  'Eye of the Storm': { axes: { soul: 1, tempo: 1 }, modes: ['pvp'] },
+  'Snapshot Sights': { axes: { range: -1, soul: 1, engine: -1 }, modes: ['pve', 'pvp'] },
+  'Perpetual Motion': { axes: { tempo: 1, soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
+
+  // Burst / DPS (PvE)
+  'Vorpal Weapon': { axes: { cadence: 2 }, modes: ['pve'] },
+  'Bait and Switch': { axes: { cadence: 2, engine: 1 }, modes: ['pve'] },
+  'High-Impact Reserves': { axes: { cadence: 1 }, modes: ['pve', 'pvp'] },
+
+  // Sustain / uptime (PvE-leaning)
+  Reconstruction: { axes: { cadence: -2 }, modes: ['pve'] },
+  Subsistence: { axes: { cadence: -1 }, modes: ['pve', 'pvp'] },
+  Overflow: { axes: { cadence: -1 }, modes: ['pve'] },
+  'Rewind Rounds': { axes: { cadence: -1 }, modes: ['pve'] },
+  'Target Lock': { axes: { cadence: -1, range: 1 }, modes: ['pve', 'pvp'] },
+
+  // Ability-loop / synergy (Architect) — the "space magic" perks
+  Demolitionist: { axes: { engine: 2 }, modes: ['pve', 'pvp'] },
+  Pugilist: { axes: { engine: 2, range: 1 }, modes: ['pve'] },
+  Voltshot: { axes: { engine: 2, cadence: -1 }, modes: ['pve'] },
+  'Repulsor Brace': { axes: { engine: 2 }, modes: ['pve'] },
+  'Destabilizing Rounds': { axes: { engine: 2, cadence: -1 }, modes: ['pve'] },
+  'Aggregate Charge': { axes: { engine: 2, cadence: 1 }, modes: ['pve'] },
 };
 
 // How to describe the player's own tendency on each axis pole.
@@ -56,8 +70,8 @@ export function buildReport(profile, mode) {
   return {
     summary: summaryText(c, mode),
     frames: frameFit(c),
-    seek: rankPerks(c, 'seek'),
-    avoid: rankPerks(c, 'avoid'),
+    seek: rankPerks(c, 'seek', mode),
+    avoid: rankPerks(c, 'avoid', mode),
   };
 }
 
@@ -67,32 +81,34 @@ function dirOf(c) {
   return d;
 }
 
-function rankPerks(c, kind) {
+function rankPerks(c, kind, mode) {
   const dir = dirOf(c);
-  const scored = Object.entries(PERK_AXES).map(([name, ax]) => {
-    let fit = 0;
-    let topAxis = null;
-    let topMag = 0;
-    for (const [a, w] of Object.entries(ax)) {
-      const contrib = w * dir[a];
-      fit += contrib;
-      if (Math.abs(contrib) > topMag) {
-        topMag = Math.abs(contrib);
-        topAxis = a;
+  const scored = Object.entries(PERKS_REC)
+    .filter(([, def]) => def.modes.includes(mode))
+    .map(([name, def]) => {
+      let fit = 0;
+      let topAxis = null;
+      let topMag = 0;
+      for (const [a, w] of Object.entries(def.axes)) {
+        const contrib = w * dir[a];
+        fit += contrib;
+        if (Math.abs(contrib) > topMag) {
+          topMag = Math.abs(contrib);
+          topAxis = a;
+        }
       }
-    }
-    return { name, fit, topAxis };
-  });
+      return { name, fit, topAxis };
+    });
 
   if (kind === 'seek') {
     return scored
-      .filter((p) => p.fit > 12)
+      .filter((p) => p.fit > 10)
       .sort((a, b) => b.fit - a.fit)
       .slice(0, 4)
       .map((p) => ({ name: p.name, why: whySeek(p, c) }));
   }
   return scored
-    .filter((p) => p.fit < -12)
+    .filter((p) => p.fit < -10)
     .sort((a, b) => a.fit - b.fit)
     .slice(0, 3)
     .map((p) => ({ name: p.name, why: whyAvoid(p, c) }));
@@ -126,7 +142,9 @@ function frameFit(c) {
   }
 
   if (c.engine >= 58) {
-    frames.push('Lean on ability-feeding perks — they matter more than raw stats for you');
+    frames.push('Lean on ability-feeding perks (Demolitionist, Voltshot, synergy) — they matter more than raw stats for you');
+  } else if (c.engine <= 42) {
+    frames.push('Tune for gunfeel — reload, handling, stability; perks that sharpen the gun, not the build');
   }
   return frames;
 }
@@ -144,5 +162,12 @@ function summaryText(c, mode) {
     tension = ` You play patient but fight close, so you lean on perks that reward holding your ground in a brawl.`;
   }
 
-  return `In ${label}, ${tempo}, ${range}, and ${soul}.${tension}`;
+  let engineLine = '';
+  if (c.engine <= 38) {
+    engineLine = ` You\u2019re a gunfeel purist — you\u2019d rather a weapon feel perfect than feed a build, so chase reload/handling/stability perks and skip the ability-loop \u201cspace magic.\u201d`;
+  } else if (c.engine >= 62) {
+    engineLine = ` You\u2019re a build architect — perks that feed your abilities and synergies are worth more to you than raw stats.`;
+  }
+
+  return `In ${label}, ${tempo}, ${range}, and ${soul}.${tension}${engineLine}`;
 }

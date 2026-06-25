@@ -339,7 +339,7 @@ function axisBar(label, ax, pos) {
     <div class="axis-poles"><span>${escapeHtml(ax.a)}</span><span class="axis-name">${escapeHtml(
       label
     )}</span><span>${escapeHtml(ax.b)}</span></div>
-    <div class="axis-track"><div class="axis-dot" style="left:${pos}%"></div></div>
+    <div class="axis-track"><div class="axis-dot" style="left:${100 - pos}%"></div></div>
   </div>`;
 }
 
