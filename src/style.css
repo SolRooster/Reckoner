@@ -178,14 +178,28 @@ html, body {
 .copy-idx { color: var(--amber); font-weight: 700; font-size: 0.8rem; min-width: 2.2ch; }
 .copy-perks { color: var(--ink); font-size: 0.9rem; }
 
-.roll-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.roll-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .roll-list li {
   display: grid;
-  grid-template-columns: 2.6ch 1fr;
-  grid-template-areas: "count traits" "count extras";
+  grid-template-columns: 2.6ch 1fr auto;
+  grid-template-areas:
+    "count traits verdict"
+    "count extras verdict";
   column-gap: 10px;
+  row-gap: 2px;
   align-items: baseline;
 }
 .roll-count { grid-area: count; color: var(--amber); font-weight: 700; font-size: 0.82rem; }
 .roll-traits { grid-area: traits; color: var(--ink); font-weight: 600; font-size: 0.95rem; }
 .roll-extras { grid-area: extras; color: var(--muted); font-size: 0.78rem; }
+.roll-verdict {
+  grid-area: verdict; align-self: center;
+  font-size: 0.72rem; font-weight: 700; padding: 3px 9px;
+  border-radius: 999px; white-space: nowrap;
+}
+.roll-verdict.keep { background: rgba(103, 224, 140, 0.14); color: #67e08c; }
+.roll-verdict.shard { background: rgba(255, 90, 78, 0.14); color: #ff8a80; }
+.roll-verdict.unsure { background: rgba(245, 185, 66, 0.14); color: var(--amber); }
+
+.vault-blurb { margin: 0 0 12px; color: var(--ink); font-size: 0.9rem; line-height: 1.5; }
+.vault-blurb strong { color: var(--amber); }

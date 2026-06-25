@@ -9,6 +9,7 @@ import {
   getFullProfile,
 } from './bungie/api.js';
 import { loadItems } from './bungie/manifest.js';
+import { gradeGun } from './engine/verdict.js';
 
 const app = document.querySelector('#app');
 
@@ -80,17 +81,27 @@ const WEAPON_PERKS_CATEGORY = 4241085061; // "WEAPON PERKS" socket category
 const TIER_LEGENDARY = 5;
 const WEAPON_ITEM_TYPE = 3;
 
-async function scanVault(membershipType, membershipId) {
-  renderProgress('Waking the Cryptarch…');
+async function scanVault(membershipType, membershipId, weaponData) {
+  renderProgress('Waking the Cryptarch\u2026');
   try {
     const items = await loadItems((msg) => renderProgress(msg));
-    renderProgress('Reading your vault…');
+    renderProgress('Reading your vault\u2026');
     const profile = await getFullProfile(membershipType, membershipId);
     const weapons = collectWeapons(profile, items);
-    renderVault(weapons);
+    renderVault(weapons, buildUsageMap(weaponData));
   } catch (e) {
     renderError(e.message);
   }
+}
+
+function buildUsageMap(weaponData) {
+  const map = new Map();
+  if (!weaponData) return map;
+  const add = (arr) =>
+    (arr ?? []).forEach((w) => map.set(w.name, Math.max(map.get(w.name) ?? 0, w.kills)));
+  add(weaponData.all);
+  (weaponData.perChar ?? []).forEach((c) => add(c.weapons));
+  return map;
 }
 
 function collectWeapons(profile, items) {
@@ -137,13 +148,14 @@ function readPerks(def, socketInfo, items) {
   return { traits, extras };
 }
 
-function renderVault(weapons) {
+function renderVault(weapons, usageMap) {
   const byHash = new Map();
   for (const w of weapons) {
     if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, copies: [] });
     byHash.get(w.hash).copies.push(w.perks);
   }
   const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
+  const graded = groups.map((g) => ({ group: g, ...gradeGun(g, usageMap.get(g.name)) }));
 
   app.innerHTML = `
     <header class="topbar">
@@ -153,40 +165,39 @@ function renderVault(weapons) {
     <section class="dash">
       <h2>Your vault: ${weapons.length} legendary weapon${weapons.length === 1 ? '' : 's'},
         ${groups.length} unique.</h2>
-      <p class="subtle">Grouped by gun. Each line is one copy's roll. The reckoning comes next.</p>
+      <p class="subtle">The reckoning \u2014 keepers up top, shards called out. Two traits drive every verdict.</p>
       <div class="vault">
-        ${groups.map(vaultCard).join('') || '<p class="subtle">No legendary weapons found.</p>'}
+        ${graded.map(vaultCard).join('') || '<p class="subtle">No legendary weapons found.</p>'}
       </div>
     </section>`;
 
   document.querySelector('#back').addEventListener('click', () => boot());
 }
 
-function vaultCard(g) {
-  // Collapse copies that share the same two trait perks.
-  const rolls = new Map();
-  for (const c of g.copies) {
-    const key = c.traits.join(' + ') || '\u2014';
-    if (!rolls.has(key)) rolls.set(key, { traits: c.traits, extras: c.extras, count: 0 });
-    rolls.get(key).count += 1;
-  }
-  const rows = [...rolls.values()]
-    .sort((a, b) => b.count - a.count)
-    .map(
-      (r) => `<li>
+function vaultCard({ group, rolls, blurb }) {
+  const rows = rolls
+    .map((r) => {
+      const cls = r.keep ? 'keep' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
+      return `<li>
         <span class="roll-count">&times;${r.count}</span>
         <span class="roll-traits">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
         <span class="roll-extras">${r.extras.map(escapeHtml).join(' &middot; ')}</span>
-      </li>`
-    )
+        <span class="roll-verdict ${cls}">${escapeHtml(r.verdict)}</span>
+      </li>`;
+    })
     .join('');
   return `<div class="vault-card">
     <div class="vault-head">
-      <span class="vault-name">${escapeHtml(g.name)}</span>
-      <span class="vault-meta">${escapeHtml(g.type || '')} &middot; &times;${g.copies.length}</span>
+      <span class="vault-name">${escapeHtml(group.name)}</span>
+      <span class="vault-meta">${escapeHtml(group.type || '')} &middot; &times;${group.copies.length}</span>
     </div>
+    <p class="vault-blurb">${renderBlurb(blurb)}</p>
     <ul class="roll-list">${rows}</ul>
   </div>`;
+}
+
+function renderBlurb(text) {
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
 // ---- Milestone 1: the API spills your secrets -----------------------------
@@ -258,7 +269,7 @@ async function renderDashboard() {
 
   document
     .querySelector('#scan')
-    .addEventListener('click', () => scanVault(membershipType, membershipId));
+    .addEventListener('click', () => scanVault(membershipType, membershipId, weaponData));
 
   setupWeaponTabs(weaponData);
 }
