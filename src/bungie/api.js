@@ -44,7 +44,7 @@ export function getAccountStats(membershipType, membershipId) {
 // Per-character weapon usage (kills, precision) for the "most used" board.
 export function getCharacterWeaponStats(membershipType, membershipId, characterId) {
   return bungie(
-    `Destiny2/${membershipType}/Account/${membershipId}/Character/${characterId}/Stats/?groups=Weapons`
+    `Destiny2/${membershipType}/Account/${membershipId}/Character/${characterId}/Stats/UniqueWeapons/`
   );
 }
 
