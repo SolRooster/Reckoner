@@ -1,5 +1,7 @@
-// Reckoner Combat Assessment — "Doctrine".
-// Five bipolar axes. Each answer nudges one or more axes toward pole A (+) or B (-).
+// Reckoner Combat Assessment — "Doctrine" v2 (mode-split).
+// Five bipolar axes. Three are mode-agnostic identity (engine/cadence/soul);
+// two split by mode (tempo/range) because players fight PvE and PvP differently.
+// Each answer nudges axes toward pole A (+) or pole B (-).
 export const AXES = {
   tempo: { a: 'Slayer', b: 'Anchor', desc: 'how you take space' },
   range: { a: 'Knife-fighter', b: 'Sightline', desc: 'where you win fights' },
@@ -8,24 +10,15 @@ export const AXES = {
   soul: { a: 'Showtime', b: 'Bedrock', desc: 'what you optimize for' },
 };
 
+export const SHARED_AXES = ['engine', 'cadence', 'soul'];
+export const MODE_AXES = ['tempo', 'range'];
+
+// section: 'shared' | 'pve' | 'pvp'. Shared questions touch identity axes;
+// pve/pvp questions touch tempo/range and route into that mode's profile.
 export const QUESTIONS = [
+  // ---- Identity (shared) ----
   {
-    q: 'Control match, heavy ammo just spawned mid-map. Your instinct:',
-    options: [
-      { text: 'Sprint it down and fight anyone who contests', axis: { tempo: 2 } },
-      { text: 'Hold a sightline and punish whoever grabs it', axis: { tempo: -2, range: -1 } },
-      { text: 'Let a teammate take it — I cover and trade', axis: { tempo: -1, engine: 1 } },
-    ],
-  },
-  {
-    q: 'Your ideal engagement distance:',
-    options: [
-      { text: 'In their face — fusion, shotgun, SMG', axis: { range: 2 } },
-      { text: 'Mid-range — pulses and hand cannons', axis: { range: 0 } },
-      { text: 'Across the map — scouts and snipers', axis: { range: -2 } },
-    ],
-  },
-  {
+    section: 'shared',
     q: 'What actually makes you feel powerful?',
     options: [
       { text: 'An ability loop that never stops — grenade, melee, buffs', axis: { engine: 2 } },
@@ -33,13 +26,24 @@ export const QUESTIONS = [
     ],
   },
   {
-    q: 'Boss DPS phase. Your dream weapon:',
+    section: 'shared',
+    q: 'The Division / build-craft instinct:',
     options: [
-      { text: 'One massive burst, then swap (linear, rocket, Sleeper)', axis: { cadence: 2 } },
-      { text: 'Relentless uptime that never stops (trace, MG, auto)', axis: { cadence: -2 } },
+      { text: 'I theorycraft synergy — perks that feed each other', axis: { engine: 2 } },
+      { text: 'I chase raw gunfeel and fundamentals', axis: { engine: -2 } },
+      { text: 'Whatever makes my fireteam stronger', axis: { engine: 1 } },
     ],
   },
   {
+    section: 'shared',
+    q: 'Your damage rhythm:',
+    options: [
+      { text: 'One massive burst, then swap (linear, rocket, sniper)', axis: { cadence: 2 } },
+      { text: 'Relentless uptime that never stops (trace, auto, scout)', axis: { cadence: -2 } },
+    ],
+  },
+  {
+    section: 'shared',
     q: 'Pick your highlight clip:',
     options: [
       { text: 'A flashy, improbable, high-skill play', axis: { soul: 2 } },
@@ -47,54 +51,88 @@ export const QUESTIONS = [
     ],
   },
   {
-    q: 'When you die in Crucible, it\u2019s usually because you:',
-    options: [
-      { text: 'Pushed too aggressive', axis: { tempo: 1 } },
-      { text: 'Held too passive and got out-traded', axis: { tempo: -1 } },
-    ],
-  },
-  {
-    q: 'Halo nostalgia — your Reach / H3 identity was:',
-    options: [
-      { text: 'Objective + utility: nades, equipment, map control', axis: { engine: 1, tempo: -1 } },
-      { text: 'BR/DMR precision dueling', axis: { engine: -1, range: -1 } },
-    ],
-  },
-  {
-    q: 'The Division hooked you because of:',
-    options: [
-      { text: 'Theorycrafting builds and gear synergy', axis: { engine: 2 } },
-      { text: 'The gunfeel and cover-to-cover combat', axis: { engine: -1 } },
-      { text: 'Never really played it', axis: {} },
-    ],
-  },
-  {
-    q: 'Your weapon fantasy:',
-    options: [
-      { text: 'Precision marksman — every shot counts', axis: { cadence: 1, range: -1 } },
-      { text: 'Spray and sustain — drown them in bullets', axis: { cadence: -1, range: 1 } },
-    ],
-  },
-  {
+    section: 'shared',
     q: 'Loadout philosophy:',
     options: [
-      { text: 'Best-in-slot meta, fully optimized', axis: { soul: -1 } },
-      { text: 'Off-meta stuff that\u2019s fun even if it\u2019s worse', axis: { soul: 1 } },
-      { text: 'Whatever makes my fireteam stronger', axis: { engine: 1 } },
+      { text: 'Off-meta stuff that\u2019s fun even if it\u2019s worse', axis: { soul: 2 } },
+      { text: 'Best-in-slot, optimized, reliable', axis: { soul: -2 } },
     ],
   },
+
+  // ---- PvE ----
   {
+    section: 'pve',
     q: 'In a GM Nightfall, your role is:',
     options: [
-      { text: 'Front-line — making space, drawing aggro', axis: { tempo: 1 } },
+      { text: 'Front-line — making space, drawing aggro, melee plays', axis: { tempo: 2 } },
       { text: 'Anchor the back, control the room methodically', axis: { tempo: -2 } },
     ],
   },
   {
-    q: 'The gun you\u2019d never delete:',
+    section: 'pve',
+    q: 'Clearing a packed room of adds, you want to be:',
     options: [
-      { text: 'A fusion/shotgun that deletes up close', axis: { range: 1, cadence: 1 } },
-      { text: 'A scout/pulse that owns the lane', axis: { range: -1, cadence: -1 } },
+      { text: 'In the mix — close-range, fusions, Centrifuse chaos', axis: { range: 2, tempo: 1 } },
+      { text: 'Picking them off from range — scout, pulse, wave-clear', axis: { range: -2 } },
+    ],
+  },
+  {
+    section: 'pve',
+    q: 'Your PvE comfort zone:',
+    options: [
+      { text: 'Wade in — abilities and melee carry me', axis: { tempo: 2, range: 1 } },
+      { text: 'Set up, hold, and control the lane', axis: { tempo: -1, range: -1 } },
+    ],
+  },
+  {
+    section: 'pve',
+    q: 'Boss damage, you\u2019d rather:',
+    options: [
+      { text: 'Burst it down fast and swap off', axis: { range: 0 } },
+      { text: 'Sit in a safe lane and chip sustained damage', axis: { range: -1 } },
+    ],
+  },
+
+  // ---- PvP ----
+  {
+    section: 'pvp',
+    q: 'Your Crucible instinct when you spot someone:',
+    options: [
+      { text: 'Close the gap — pressure, melee, take the duel', axis: { tempo: 2 } },
+      { text: 'Reposition for a clean, pre-aimed shot', axis: { tempo: -2 } },
+    ],
+  },
+  {
+    section: 'pvp',
+    q: 'Where you actually win duels:',
+    options: [
+      { text: 'Up close — shotgun, fusion, SMG', axis: { range: 2 } },
+      { text: 'Mid-range — hand cannon, pulse trades', axis: { range: 0 } },
+      { text: 'Out at the lanes — scout, sniper, precision', axis: { range: -2 } },
+    ],
+  },
+  {
+    section: 'pvp',
+    q: 'Special-ammo apes (shotgun/fusion) keep rushing you. You:',
+    options: [
+      { text: 'Out-range them — scout + sidearm, win before they\u2019re close', axis: { range: -2, tempo: 1 } },
+      { text: 'Meet them head-on and out-duel up close', axis: { range: 2, tempo: 1 } },
+    ],
+  },
+  {
+    section: 'pvp',
+    q: 'Be honest — your aggression in PvP:',
+    options: [
+      { text: 'I want to be aggressive; I hunt kills and melee plays', axis: { tempo: 2 } },
+      { text: 'I play disciplined; patience wins the round', axis: { tempo: -2 } },
+    ],
+  },
+  {
+    section: 'pvp',
+    q: 'Your real edge in the Crucible:',
+    options: [
+      { text: 'Mechanics and flash — I make the hard play', axis: { soul: 2 } },
+      { text: 'Precision and positioning — consistent, every time', axis: { soul: -2 } },
     ],
   },
 ];

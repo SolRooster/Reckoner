@@ -10,8 +10,9 @@ import {
 } from './bungie/api.js';
 import { loadItems } from './bungie/manifest.js';
 import { gradeGun } from './engine/verdict.js';
-import { AXES, QUESTIONS } from './assessment/questions.js';
+import { AXES, QUESTIONS, SHARED_AXES, MODE_AXES } from './assessment/questions.js';
 import { scoreAnswers, archetype, saveProfile, loadProfile } from './assessment/profile.js';
+import { buildReport } from './assessment/report.js';
 
 const app = document.querySelector('#app');
 
@@ -288,8 +289,11 @@ function renderProfileBanner() {
   if (profile) {
     el.innerHTML = `
       <span class="pb-label">Combat Doctrine:</span>
-      <span class="pb-archetype">${escapeHtml(archetype(profile))}</span>
+      <span class="pb-archetype">PvE \u00b7 ${escapeHtml(archetype(profile, 'pve'))}</span>
+      <span class="pb-archetype">PvP \u00b7 ${escapeHtml(archetype(profile, 'pvp'))}</span>
+      <button id="view-doctrine" class="btn-link">View</button>
       <button id="take-assessment" class="btn-link">Retake</button>`;
+    el.querySelector('#view-doctrine').addEventListener('click', () => renderProfileResult(profile));
   } else {
     el.innerHTML = `
       <span class="pb-label">No combat profile yet.</span>
@@ -297,6 +301,8 @@ function renderProfileBanner() {
   }
   el.querySelector('#take-assessment').addEventListener('click', () => renderQuestion(0, []));
 }
+
+const SECTION_LABEL = { shared: 'Identity', pve: 'PvE', pvp: 'PvP' };
 
 function renderQuestion(index, answers) {
   if (index >= QUESTIONS.length) {
@@ -307,7 +313,9 @@ function renderQuestion(index, answers) {
   const q = QUESTIONS[index];
   app.innerHTML = `
     <section class="quiz">
-      <div class="quiz-progress">Question ${index + 1} of ${QUESTIONS.length}</div>
+      <div class="quiz-progress">${SECTION_LABEL[q.section] || ''} \u00b7 Question ${
+        index + 1
+      } of ${QUESTIONS.length}</div>
       <div class="quiz-bar"><div class="quiz-fill" style="width:${
         ((index + 1) / QUESTIONS.length) * 100
       }%"></div></div>
@@ -321,30 +329,60 @@ function renderQuestion(index, answers) {
   app.querySelectorAll('.quiz-option').forEach((btn) => {
     btn.addEventListener('click', () => {
       const opt = q.options[Number(btn.dataset.i)];
-      renderQuestion(index + 1, [...answers, opt]);
+      renderQuestion(index + 1, [...answers, { section: q.section, axis: opt.axis }]);
     });
   });
 }
 
+function axisBar(label, ax, pos) {
+  return `<div class="axis">
+    <div class="axis-poles"><span>${escapeHtml(ax.a)}</span><span class="axis-name">${escapeHtml(
+      label
+    )}</span><span>${escapeHtml(ax.b)}</span></div>
+    <div class="axis-track"><div class="axis-dot" style="left:${pos}%"></div></div>
+  </div>`;
+}
+
+function modeBlock(profile, mode) {
+  const title = mode === 'pve' ? 'PvE Doctrine' : 'PvP Doctrine';
+  const report = buildReport(profile, mode);
+  const modeBars = MODE_AXES.map((k) => axisBar(AXES[k].desc, AXES[k], profile[mode][k])).join('');
+  const frames = report.frames.map((f) => `<li>${escapeHtml(f)}</li>`).join('');
+  const seek = report.seek
+    .map((p) => `<li><span class="perk-yes">${escapeHtml(p.name)}</span> &mdash; ${escapeHtml(p.why)}</li>`)
+    .join('') || '<li class="subtle">No standout chase perks \u2014 you\u2019re flexible here.</li>';
+  const avoid = report.avoid
+    .map((p) => `<li><span class="perk-no">${escapeHtml(p.name)}</span> &mdash; ${escapeHtml(p.why)}</li>`)
+    .join('') || '<li class="subtle">Nothing actively works against you.</li>';
+  return `<div class="mode-block">
+    <div class="mode-head"><span class="mode-tag">${title}</span>
+      <span class="mode-arch">${escapeHtml(archetype(profile, mode))}</span></div>
+    <p class="mode-summary">${escapeHtml(report.summary)}</p>
+    <div class="axes">${modeBars}</div>
+    <h4>Frames that fit you</h4><ul class="rec-list">${frames}</ul>
+    <h4>Perks to chase</h4><ul class="rec-list">${seek}</ul>
+    <h4>Perks to avoid</h4><ul class="rec-list">${avoid}</ul>
+  </div>`;
+}
+
 function renderProfileResult(profile) {
-  const bars = Object.entries(AXES)
-    .map(([k, ax]) => {
-      const pos = profile[k];
-      return `<div class="axis">
-        <div class="axis-poles"><span>${escapeHtml(ax.a)}</span><span>${escapeHtml(ax.b)}</span></div>
-        <div class="axis-track"><div class="axis-dot" style="left:${pos}%"></div></div>
-      </div>`;
-    })
-    .join('');
+  const identity = SHARED_AXES.map((k) => axisBar(AXES[k].desc, AXES[k], profile.shared[k])).join('');
   app.innerHTML = `
+    <header class="topbar">
+      <span class="wordmark small">RECKONER</span>
+      <button id="done" class="btn-link">&larr; Back</button>
+    </header>
     <section class="dash">
       <p class="subtle">Your Combat Doctrine</p>
-      <h2 class="archetype-title">${escapeHtml(archetype(profile))}</h2>
-      <div class="axes">${bars}</div>
-      <p class="next subtle">Reckoner will start weighing your vault verdicts toward this profile.</p>
-      <button id="done" class="btn-primary">Back to the record</button>
+      <h3>Identity <span class="subtle">(holds in any mode)</span></h3>
+      <div class="axes">${identity}</div>
+      ${modeBlock(profile, 'pve')}
+      ${modeBlock(profile, 'pvp')}
+      <p class="next subtle">Reckoner will weigh your vault verdicts toward this profile next.</p>
+      <button id="done2" class="btn-primary">Back to the record</button>
     </section>`;
   document.querySelector('#done').addEventListener('click', () => boot());
+  document.querySelector('#done2').addEventListener('click', () => boot());
 }
 
 function setupWeaponTabs(weaponData) {

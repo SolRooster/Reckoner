@@ -131,12 +131,31 @@ html, body {
 }
 .axes { display: flex; flex-direction: column; gap: 18px; }
 .axis-poles { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+.axis-name { color: var(--ink); font-weight: 600; }
 .axis-track { position: relative; height: 8px; background: var(--panel-2); border-radius: 6px; }
 .axis-dot {
   position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%;
   background: var(--amber); transform: translate(-50%, -50%);
   box-shadow: 0 0 0 4px rgba(245, 185, 66, 0.18);
 }
+
+/* Doctrine report */
+.mode-block {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 20px; margin-top: 20px;
+}
+.mode-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.mode-tag {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #1a1205; background: var(--amber); padding: 3px 10px; border-radius: 999px;
+}
+.mode-arch { font-size: 1.2rem; font-weight: 800; color: var(--ink); }
+.mode-summary { color: var(--ink); font-size: 0.92rem; line-height: 1.55; margin: 4px 0 16px; }
+.mode-block h4 { margin: 16px 0 8px; font-size: 0.9rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.rec-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rec-list li { font-size: 0.9rem; color: var(--ink); line-height: 1.4; }
+.perk-yes { color: #67e08c; font-weight: 700; }
+.perk-no { color: #ff8a80; font-weight: 700; }
 
 .split-card {
   background: var(--panel);

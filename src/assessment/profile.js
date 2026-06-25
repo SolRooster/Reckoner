@@ -1,54 +1,85 @@
-// Scores assessment answers into a 0-100 position per axis (50 = neutral,
-// 100 = pole A), derives an archetype title, and persists the profile locally.
-import { AXES, QUESTIONS } from './questions.js';
+// Scores assessment answers into mode-split positions (0-100 per axis; 50 =
+// neutral, 100 = pole A). Identity axes (engine/cadence/soul) are shared;
+// tempo/range are stored per mode. Also derives per-mode archetype titles.
+import { AXES, QUESTIONS, SHARED_AXES, MODE_AXES } from './questions.js';
 
 const KEY = 'reckoner_profile';
 
-// answers: array of chosen option objects (each with an `axis` map).
+// answers: array of { section, axis } (the chosen option plus its question's section).
 export function scoreAnswers(answers) {
-  const totals = {};
-  const maxes = {};
-  for (const k of Object.keys(AXES)) {
-    totals[k] = 0;
-    maxes[k] = 0;
+  const totals = { shared: {}, pve: {}, pvp: {} };
+  const maxes = { shared: {}, pve: {}, pvp: {} };
+  for (const a of SHARED_AXES) {
+    totals.shared[a] = 0;
+    maxes.shared[a] = 0;
+  }
+  for (const m of ['pve', 'pvp']) {
+    for (const a of MODE_AXES) {
+      totals[m][a] = 0;
+      maxes[m][a] = 0;
+    }
   }
 
-  // Max possible magnitude per axis, from the questions themselves.
+  // Max possible magnitude per (bucket, axis), from the questions themselves.
   for (const q of QUESTIONS) {
-    const perAxis = {};
+    const per = {};
     for (const opt of q.options) {
       for (const [k, v] of Object.entries(opt.axis || {})) {
-        perAxis[k] = Math.max(perAxis[k] ?? 0, Math.abs(v));
+        per[k] = Math.max(per[k] ?? 0, Math.abs(v));
       }
     }
-    for (const [k, v] of Object.entries(perAxis)) maxes[k] += v;
+    for (const [k, v] of Object.entries(per)) bucketAdd(maxes, q.section, k, v);
   }
 
-  for (const opt of answers) {
-    for (const [k, v] of Object.entries(opt?.axis || {})) totals[k] += v;
+  for (const a of answers) {
+    for (const [k, v] of Object.entries(a?.axis || {})) bucketAdd(totals, a.section, k, v);
   }
 
-  const profile = {};
-  for (const k of Object.keys(AXES)) {
-    const m = maxes[k] || 1;
-    const pos = Math.round(50 + (totals[k] / m) * 50);
-    profile[k] = Math.max(0, Math.min(100, pos));
-  }
-  return profile;
+  return {
+    shared: convert(totals.shared, maxes.shared),
+    pve: convert(totals.pve, maxes.pve),
+    pvp: convert(totals.pvp, maxes.pvp),
+  };
 }
 
-// Title from the two axes that deviate most from neutral.
-export function archetype(profile) {
-  const devs = Object.keys(AXES).map((k) => ({
-    k,
-    dev: Math.abs(profile[k] - 50),
-    pole: profile[k] >= 50 ? 'a' : 'b',
-  }));
+function bucketAdd(store, section, axis, value) {
+  if (SHARED_AXES.includes(axis)) {
+    store.shared[axis] += value;
+  } else if (MODE_AXES.includes(axis)) {
+    const b = section === 'pvp' ? 'pvp' : section === 'pve' ? 'pve' : null;
+    if (b) store[b][axis] += value;
+  }
+}
+
+function convert(totals, maxes) {
+  const out = {};
+  for (const k of Object.keys(totals)) {
+    const m = maxes[k] || 1;
+    out[k] = Math.max(0, Math.min(100, Math.round(50 + (totals[k] / m) * 50)));
+  }
+  return out;
+}
+
+// Full five-axis view for a given mode: shared identity + that mode's tempo/range.
+export function combined(profile, mode) {
+  return { ...(profile.shared || {}), ...(profile[mode] || {}) };
+}
+
+// Title from the two axes that deviate most from neutral, for a given mode.
+export function archetype(profile, mode) {
+  const c = combined(profile, mode);
+  const devs = Object.keys(AXES)
+    .filter((k) => k in c)
+    .map((k) => ({ k, dev: Math.abs(c[k] - 50), pole: c[k] >= 50 ? 'a' : 'b' }));
   devs.sort((x, y) => y.dev - x.dev);
   const [first, second] = devs;
   if (!first || first.dev < 8) return 'The Generalist';
   const word = (d) => AXES[d.k][d.pole];
   return `The ${word(second)} ${word(first)}`;
+}
+
+export function isValid(profile) {
+  return !!(profile && profile.shared && profile.pve && profile.pvp);
 }
 
 export function saveProfile(p) {
@@ -58,7 +89,8 @@ export function saveProfile(p) {
 export function loadProfile() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
+    const p = raw ? JSON.parse(raw) : null;
+    return isValid(p) ? p : null;
   } catch {
     return null;
   }
