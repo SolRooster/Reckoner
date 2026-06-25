@@ -125,6 +125,25 @@ html, body {
 .stat-num { font-size: 1.6rem; font-weight: 800; color: var(--ink); }
 .stat-cap { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.03em; }
 
+.weapon-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.weapon-tab {
+  background: var(--panel-2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.weapon-tab:hover { color: var(--ink); }
+.weapon-tab.active {
+  background: linear-gradient(180deg, var(--amber) 0%, var(--amber-soft) 100%);
+  color: #1a1205;
+  border-color: transparent;
+}
+
 .weapon-list { list-style: none; counter-reset: w; padding: 0; margin: 0; }
 .weapon-list li {
   counter-increment: w;

@@ -78,8 +78,8 @@ async function renderDashboard() {
   ]);
 
   const split = computeModeSplit(accountStats);
-  const characterIds = Object.keys(profile?.characters?.data ?? {});
-  const topWeapons = await computeTopWeapons(membershipType, membershipId, characterIds);
+  const characters = buildCharacters(profile);
+  const weaponData = await gatherWeapons(membershipType, membershipId, characters);
 
   const displayName =
     memberships?.bungieNetUser?.uniqueName ||
@@ -116,9 +116,8 @@ async function renderDashboard() {
       </div>
 
       <h3>Most-used weapons <span class="subtle">(what you actually reach for)</span></h3>
-      <ol class="weapon-list">
-        ${topWeapons.map(weaponRow).join('') || '<li class="subtle">No weapon data returned.</li>'}
-      </ol>
+      <div class="weapon-tabs" id="weapon-tabs"></div>
+      <ol class="weapon-list" id="weapon-list"></ol>
 
       <p class="next">Next stop: pull your vault and start the reckoning.</p>
     </section>`;
@@ -127,6 +126,39 @@ async function renderDashboard() {
     logout();
     location.href = redirectHome();
   });
+
+  setupWeaponTabs(weaponData);
+}
+
+function setupWeaponTabs(weaponData) {
+  const tabsEl = document.querySelector('#weapon-tabs');
+  const listEl = document.querySelector('#weapon-list');
+  if (!tabsEl || !listEl) return;
+
+  const views = [{ label: 'All', weapons: weaponData.all }, ...weaponData.perChar];
+
+  tabsEl.innerHTML = views
+    .map(
+      (v, i) =>
+        `<button class="weapon-tab${i === 0 ? ' active' : ''}" data-idx="${i}">${escapeHtml(v.label)}</button>`
+    )
+    .join('');
+
+  const render = (idx) => {
+    listEl.innerHTML =
+      views[idx].weapons.map(weaponRow).join('') ||
+      '<li class="subtle">No weapon data for this class yet.</li>';
+  };
+
+  tabsEl.querySelectorAll('.weapon-tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      tabsEl.querySelectorAll('.weapon-tab').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      render(Number(btn.dataset.idx));
+    });
+  });
+
+  render(0);
 }
 
 function weaponRow(w) {
@@ -179,42 +211,75 @@ function statValue(modeBlock, key) {
   return typeof v === 'number' ? v : 0;
 }
 
-async function computeTopWeapons(membershipType, membershipId, characterIds) {
-  const tallies = new Map(); // referenceId -> kills
+const CLASS_LABELS = { 0: 'Titan', 1: 'Hunter', 2: 'Warlock' };
 
-  const perChar = await Promise.all(
-    characterIds.map((cid) =>
-      getCharacterWeaponStats(membershipType, membershipId, cid).catch(() => null)
-    )
+function buildCharacters(profile) {
+  const data = profile?.characters?.data ?? {};
+  return Object.values(data)
+    .map((c) => ({
+      characterId: c.characterId,
+      label: CLASS_LABELS[c.classType] ?? 'Guardian',
+      lastPlayed: c.dateLastPlayed ? Date.parse(c.dateLastPlayed) : 0,
+    }))
+    .sort((a, b) => b.lastPlayed - a.lastPlayed);
+}
+
+async function gatherWeapons(membershipType, membershipId, characters) {
+  const raw = await Promise.all(
+    characters.map(async (c) => {
+      const stats = await getCharacterWeaponStats(
+        membershipType,
+        membershipId,
+        c.characterId
+      ).catch(() => null);
+      const weapons = (stats?.weapons ?? [])
+        .map((w) => ({
+          hash: w.referenceId,
+          kills: Math.round(w?.values?.uniqueWeaponKills?.basic?.value ?? 0),
+        }))
+        .filter((w) => w.hash);
+      return { label: c.label, weapons };
+    })
   );
 
-  for (const stats of perChar) {
-    const weapons = stats?.weapons ?? [];
-    for (const w of weapons) {
-      const id = w.referenceId;
-      const kills = w?.values?.uniqueWeaponKills?.basic?.value ?? 0;
-      if (!id) continue;
-      tallies.set(id, (tallies.get(id) ?? 0) + kills);
+  // Group by class label (handles multiple characters of the same class).
+  const byLabel = new Map(); // label -> Map(hash -> kills)
+  const merged = new Map(); //  hash -> kills (all classes combined)
+  for (const c of raw) {
+    if (!byLabel.has(c.label)) byLabel.set(c.label, new Map());
+    const m = byLabel.get(c.label);
+    for (const w of c.weapons) {
+      m.set(w.hash, (m.get(w.hash) ?? 0) + w.kills);
+      merged.set(w.hash, (merged.get(w.hash) ?? 0) + w.kills);
     }
   }
 
-  const top = [...tallies.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
-
-  const named = await Promise.all(
-    top.map(async ([hash, kills]) => {
-      let name = `Item ${hash}`;
+  // Resolve every weapon hash to a name exactly once.
+  const names = new Map();
+  await Promise.all(
+    [...merged.keys()].map(async (hash) => {
       try {
         const def = await getItemDefinition(hash);
-        name = def?.displayProperties?.name || name;
+        names.set(hash, def?.displayProperties?.name || `Item ${hash}`);
       } catch {
-        /* leave fallback name */
+        names.set(hash, `Item ${hash}`);
       }
-      return { hash, kills: Math.round(kills), name };
     })
   );
-  return named;
+
+  const topNamed = (map) =>
+    [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([hash, kills]) => ({ name: names.get(hash) || `Item ${hash}`, kills }));
+
+  return {
+    all: topNamed(merged),
+    perChar: [...byLabel.entries()].map(([label, map]) => ({
+      label,
+      weapons: topNamed(map),
+    })),
+  };
 }
 
 // ---- helpers ---------------------------------------------------------------
