@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+
+# Secrets — never commit
+.env
+.env.*
+.dev.vars
+worker/.dev.vars
