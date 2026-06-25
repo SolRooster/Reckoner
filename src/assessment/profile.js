@@ -35,9 +35,20 @@ export function scoreAnswers(answers) {
     for (const [k, v] of Object.entries(a?.axis || {})) bucketAdd(totals, a.section, k, v);
   }
 
+  // PvE focus (add-clear / dps / survival) accrues separately from the axes.
+  const focus = { addclear: 0, dps: 0, survival: 0 };
+  for (const a of answers) {
+    for (const [k, v] of Object.entries(a?.focus || {})) {
+      if (k in focus) focus[k] += v;
+    }
+  }
+
+  const pve = convert(totals.pve, maxes.pve);
+  pve.focus = focus;
+
   return {
     shared: convert(totals.shared, maxes.shared),
-    pve: convert(totals.pve, maxes.pve),
+    pve,
     pvp: convert(totals.pvp, maxes.pvp),
   };
 }

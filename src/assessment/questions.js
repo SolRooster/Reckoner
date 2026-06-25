@@ -100,6 +100,34 @@ export const QUESTIONS = [
       { text: 'Sit in a safe lane and chip sustained damage', axis: { range: -1 } },
     ],
   },
+  {
+    section: 'pve',
+    q: 'In a tough endgame encounter, what do you focus on most?',
+    options: [
+      { text: 'The adds — keep the room clear', focus: { addclear: 2 } },
+      { text: 'The highest-health targets — majors and the boss', focus: { dps: 2 } },
+      { text: 'Staying alive and keeping the team up', focus: { survival: 2 } },
+      { text: 'The mechanics — I run the encounter', focus: { survival: 1, addclear: 1 } },
+    ],
+  },
+  {
+    section: 'pve',
+    q: 'Your favorite kind of PvE weapon mostly:',
+    options: [
+      { text: 'Wipes whole rooms of adds', focus: { addclear: 2 } },
+      { text: 'Deletes bosses and majors', focus: { dps: 2 } },
+      { text: 'Keeps me alive and topped off', focus: { survival: 2 } },
+    ],
+  },
+  {
+    section: 'pve',
+    q: 'When a build comes together, the payoff you chase is:',
+    options: [
+      { text: 'Endless chain-reaction add-clear', focus: { addclear: 2 } },
+      { text: 'Massive single-target damage', focus: { dps: 2 } },
+      { text: 'Becoming unkillable', focus: { survival: 2 } },
+    ],
+  },
 
   // ---- PvP ----
   {

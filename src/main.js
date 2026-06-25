@@ -329,7 +329,7 @@ function renderQuestion(index, answers) {
   app.querySelectorAll('.quiz-option').forEach((btn) => {
     btn.addEventListener('click', () => {
       const opt = q.options[Number(btn.dataset.i)];
-      renderQuestion(index + 1, [...answers, { section: q.section, axis: opt.axis }]);
+      renderQuestion(index + 1, [...answers, { section: q.section, axis: opt.axis, focus: opt.focus }]);
     });
   });
 }
@@ -357,6 +357,7 @@ function modeBlock(profile, mode) {
   return `<div class="mode-block">
     <div class="mode-head"><span class="mode-tag">${title}</span>
       <span class="mode-arch">${escapeHtml(archetype(profile, mode))}</span></div>
+    ${report.focusLabel ? `<div class="focus-tag">Focus &middot; ${escapeHtml(report.focusLabel)}</div>` : ''}
     <p class="mode-summary">${escapeHtml(report.summary)}</p>
     <div class="axes">${modeBars}</div>
     <h4>Frames that fit you</h4><ul class="rec-list">${frames}</ul>

@@ -151,6 +151,11 @@ html, body {
 }
 .mode-arch { font-size: 1.2rem; font-weight: 800; color: var(--ink); }
 .mode-summary { color: var(--ink); font-size: 0.92rem; line-height: 1.55; margin: 4px 0 16px; }
+.focus-tag {
+  display: inline-block; margin: 8px 0 0; font-size: 0.78rem; font-weight: 700;
+  color: var(--amber); background: rgba(245, 185, 66, 0.12);
+  border: 1px solid rgba(245, 185, 66, 0.3); padding: 4px 10px; border-radius: 999px;
+}
 .mode-block h4 { margin: 16px 0 8px; font-size: 0.9rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .rec-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .rec-list li { font-size: 0.9rem; color: var(--ink); line-height: 1.4; }
