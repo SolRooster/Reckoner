@@ -3,57 +3,68 @@
 import { AXES } from './questions.js';
 import { combined } from './profile.js';
 
-// Perk -> { axes, modes }. Axis sign follows pole A (+) vs pole B (-):
+// Perk -> { axes, pve, pvp, note }. Axis sign follows pole A (+) vs pole B (-):
 // tempo +Slayer/-Anchor, range +Knife-fighter/-Sightline, engine +Architect/-Gunslinger,
-// cadence +Burst/-Sustain, soul +Showtime/-Bedrock. `modes` gates which mode it's
-// even eligible to be recommended in (no Bait and Switch in PvP).
+// cadence +Burst/-Sustain, soul +Showtime/-Bedrock.
+// pve/pvp = power tier in that mode (0 = not eligible, 1 = niche, 2 = strong, 3 = top).
+// "Chase" ranks by power first, playstyle fit second; 0 means it never shows for that mode.
 const PERKS_REC = {
-  // Aggression / momentum
-  Rampage: { axes: { tempo: 2, cadence: 1 }, modes: ['pve', 'pvp'] },
-  'Kill Clip': { axes: { tempo: 1, cadence: 1 }, modes: ['pve', 'pvp'] },
-  Swashbuckler: { axes: { tempo: 2, range: 1 }, modes: ['pve', 'pvp'] },
-  'Killing Wind': { axes: { tempo: 1, range: -1 }, modes: ['pve', 'pvp'] },
-  Slideways: { axes: { tempo: 1, soul: -1 }, modes: ['pve', 'pvp'] },
-  Kickstart: { axes: { tempo: 2 }, modes: ['pve', 'pvp'] },
-  'Moving Target': { axes: { tempo: 1, range: 1 }, modes: ['pvp'] },
-  'Tap the Trigger': { axes: { tempo: 1, range: 1 }, modes: ['pvp'] },
-  'Grave Robber': { axes: { range: 2, tempo: 1 }, modes: ['pve'] },
-  'Threat Detector': { axes: { range: 2 }, modes: ['pve', 'pvp'] },
+  // --- PvE damage / burst ---
+  'Bait and Switch': { axes: { cadence: 2, engine: 1 }, pve: 3, pvp: 0, note: 'huge burst DPS if you swap across all three weapons' },
+  'Firing Line': { axes: { cadence: 2 }, pve: 3, pvp: 0, note: 'big crit damage when you fight near teammates' },
+  'Aggregate Charge': { axes: { engine: 2, cadence: 1 }, pve: 3, pvp: 0, note: 'scales with unique debuffs — elite for Void/Prismatic loops, dead weight without them' },
+  'Vorpal Weapon': { axes: { cadence: 2 }, pve: 2, pvp: 1, note: 'flat bonus damage to bosses, majors and supers' },
+  'Controlled Burst': { axes: { soul: -1 }, pve: 3, pvp: 2, note: 'fusion perk — perfect bolts ramp damage; strong both ways' },
+  'Reservoir Burst': { axes: { cadence: 2 }, pve: 2, pvp: 1, note: 'a full mag hits harder and explodes' },
+  'High-Impact Reserves': { axes: { cadence: 1 }, pve: 2, pvp: 1, note: 'more damage as the mag runs low — special-weapon staple' },
+  'Killing Tally': { axes: { cadence: 1 }, pve: 2, pvp: 0, note: 'stacking damage that loves long fights' },
+  Frenzy: { axes: { cadence: -1 }, pve: 2, pvp: 1, note: 'free damage, reload and handling once a fight gets going' },
+  'Target Lock': { axes: { cadence: -1, range: 1 }, pve: 2, pvp: 1, note: 'ramps damage the longer you stay on target — loves SMGs/autos' },
 
-  // Anchor / control — the slow-down perks
-  'Firmly Planted': { axes: { tempo: -2 }, modes: ['pve', 'pvp'] },
-  'Slide Shot': { axes: { tempo: 1, range: -1 }, modes: ['pve', 'pvp'] },
+  // --- PvE add-clear ---
+  'Chain Reaction': { axes: {}, pve: 3, pvp: 0, note: 'every kill triggers an elemental blast — pure add-clear' },
+  Incandescent: { axes: {}, pve: 3, pvp: 1, note: 'kills scatter scorch — a Solar add-clear staple' },
+  Voltshot: { axes: { engine: 2 }, pve: 3, pvp: 1, note: 'reload-on-kill to jolt the next target' },
+  'Destabilizing Rounds': { axes: { engine: 2 }, pve: 2, pvp: 1, note: 'kills make targets volatile for chain explosions' },
+  Dragonfly: { axes: {}, pve: 2, pvp: 1, note: 'precision kills pop an elemental burst' },
+  'Kinetic Tremors': { axes: { cadence: -1 }, pve: 2, pvp: 1, note: 'sustained hits send a damaging shockwave through targets' },
+  'Golden Tricorn': { axes: {}, pve: 2, pvp: 1, note: 'big stack when you mix ability and weapon kills' },
 
-  // Range / precision / gunfeel (Gunslinger-friendly)
-  'Opening Shot': { axes: { range: -2, soul: -1, engine: -1 }, modes: ['pvp'] },
-  Rangefinder: { axes: { range: -2, engine: -1 }, modes: ['pve', 'pvp'] },
-  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
-  'Rapid Hit': { axes: { range: -1, soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
-  'Dynamic Sway Reduction': { axes: { soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
-  'Explosive Payload': { axes: { range: -1, soul: -1 }, modes: ['pve', 'pvp'] },
-  'Eye of the Storm': { axes: { soul: 1, tempo: 1 }, modes: ['pvp'] },
-  'Snapshot Sights': { axes: { range: -1, soul: 1, engine: -1 }, modes: ['pve', 'pvp'] },
-  'Perpetual Motion': { axes: { tempo: 1, soul: -1, engine: -1 }, modes: ['pve', 'pvp'] },
+  // --- PvE economy / uptime ---
+  Reconstruction: { axes: { cadence: -2 }, pve: 3, pvp: 1, note: 'auto-refills an oversized mag — never reload' },
+  'Envious Assassin': { axes: { cadence: -1 }, pve: 3, pvp: 0, note: 'overflows the mag off kills before you swap to a boss' },
+  Demolitionist: { axes: { engine: 2 }, pve: 2, pvp: 1, note: 'kills feed your grenade — ability-loop fuel' },
+  Overflow: { axes: { cadence: -1 }, pve: 2, pvp: 1, note: 'double mag off a brick — burst before reloading (needs ammo pickups)' },
+  'Rewind Rounds': { axes: { cadence: -1 }, pve: 2, pvp: 0, note: 'refunds the mag based on hits — endless uptime' },
+  'Repulsor Brace': { axes: { engine: 2 }, pve: 2, pvp: 1, note: 'Void kills grant an overshield — survivability glue' },
+  Subsistence: { axes: { cadence: -1 }, pve: 1, pvp: 1, note: 'kills top up the mag from reserves' },
 
-  // Burst / DPS (PvE)
-  'Vorpal Weapon': { axes: { cadence: 2 }, modes: ['pve'] },
-  'Bait and Switch': { axes: { cadence: 2, engine: 1 }, modes: ['pve'] },
-  'High-Impact Reserves': { axes: { cadence: 1 }, modes: ['pve', 'pvp'] },
+  // --- PvP dueling ---
+  'Kill Clip': { axes: { tempo: 1, cadence: 1 }, pve: 1, pvp: 3, note: 'reload after a kill for a damage spike — a Crucible one-tap enabler' },
+  Desperado: { axes: { tempo: 1 }, pve: 1, pvp: 3, note: 'precision kills crank pulse-rifle fire rate' },
+  Headseeker: { axes: { range: -1 }, pve: 0, pvp: 3, note: 'body shots boost your follow-up headshot — pulse cornerstone' },
+  'Eye of the Storm': { axes: { soul: 1, tempo: 1 }, pve: 0, pvp: 3, note: 'gets better the lower your health — clutch perk' },
+  Rampage: { axes: { tempo: 2, cadence: 1 }, pve: 1, pvp: 2, note: 'stacks damage as you chain kills — keeps you on offense' },
+  Swashbuckler: { axes: { tempo: 2, range: 1 }, pve: 2, pvp: 2, note: 'melee or weapon kills spike damage — a close-range monster' },
+  'Opening Shot': { axes: { range: -2, soul: -1, engine: -1 }, pve: 0, pvp: 2, note: 'first shot of a fight gets bonus range and accuracy' },
+  Rangefinder: { axes: { range: -2, engine: -1 }, pve: 0, pvp: 2, note: 'extends effective range while aiming' },
+  'Moving Target': { axes: { tempo: 1, range: 1 }, pve: 0, pvp: 2, note: 'better strafe speed and aim assist while moving' },
+  'Killing Wind': { axes: { tempo: 1, range: -1 }, pve: 1, pvp: 2, note: 'a kill grants range, handling and speed' },
+  Slideways: { axes: { tempo: 1, soul: -1 }, pve: 1, pvp: 2, note: 'slide to reload and gain stability — for the aggressive push' },
+  Kickstart: { axes: { tempo: 2 }, pve: 1, pvp: 2, note: 'slide into a faster, harder-hitting charged shot' },
+  'Tap the Trigger': { axes: { tempo: 1, range: 1 }, pve: 0, pvp: 2, note: 'tightens the first burst — for fusions and shotguns' },
+  'Explosive Payload': { axes: { range: -1, soul: -1 }, pve: 1, pvp: 2, note: 'rounds deal bonus area damage — consistent chip at range' },
+  'Snapshot Sights': { axes: { range: -1, soul: 1, engine: -1 }, pve: 1, pvp: 2, note: 'lightning-fast ADS — duels and quickscopes' },
 
-  // Sustain / uptime (PvE-leaning)
-  Reconstruction: { axes: { cadence: -2 }, modes: ['pve'] },
-  Subsistence: { axes: { cadence: -1 }, modes: ['pve', 'pvp'] },
-  Overflow: { axes: { cadence: -1 }, modes: ['pve'] },
-  'Rewind Rounds': { axes: { cadence: -1 }, modes: ['pve'] },
-  'Target Lock': { axes: { cadence: -1, range: 1 }, modes: ['pve', 'pvp'] },
+  // --- Gunfeel / control (Gunslinger-friendly) ---
+  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, note: 'damage dealt tightens recoil — pure control' },
+  'Rapid Hit': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, note: 'precision hits boost reload and stability' },
+  'Dynamic Sway Reduction': { axes: { soul: -1, engine: -1 }, pve: 1, pvp: 2, note: 'sustained fire tightens accuracy — a feel perk' },
+  'Perpetual Motion': { axes: { tempo: 1, soul: -1, engine: -1 }, pve: 1, pvp: 2, note: 'stat boost while you keep moving' },
 
-  // Ability-loop / synergy (Architect) — the "space magic" perks
-  Demolitionist: { axes: { engine: 2 }, modes: ['pve', 'pvp'] },
-  Pugilist: { axes: { engine: 2, range: 1 }, modes: ['pve'] },
-  Voltshot: { axes: { engine: 2, cadence: -1 }, modes: ['pve'] },
-  'Repulsor Brace': { axes: { engine: 2 }, modes: ['pve'] },
-  'Destabilizing Rounds': { axes: { engine: 2, cadence: -1 }, modes: ['pve'] },
-  'Aggregate Charge': { axes: { engine: 2, cadence: 1 }, modes: ['pve'] },
+  // --- Anchor / point-blank (mismatches for aggressive, mobile players) ---
+  'Firmly Planted': { axes: { tempo: -2 }, pve: 1, pvp: 1, note: 'big accuracy and handling boost — but only while standing still' },
+  'Threat Detector': { axes: { range: 2 }, pve: 1, pvp: 1, note: 'buffs reload and stability when enemies are close — rewards point-blank' },
 };
 
 // How to describe the player's own tendency on each axis pole.
@@ -83,13 +94,14 @@ function dirOf(c) {
 
 function rankPerks(c, kind, mode) {
   const dir = dirOf(c);
+  const clamp = (x, m) => Math.max(-m, Math.min(m, x));
   const scored = Object.entries(PERKS_REC)
-    .filter(([, def]) => def.modes.includes(mode))
-    .map(([name, def]) => {
+    .filter(([, d]) => (d[mode] || 0) > 0)
+    .map(([name, d]) => {
       let fit = 0;
       let topAxis = null;
       let topMag = 0;
-      for (const [a, w] of Object.entries(def.axes)) {
+      for (const [a, w] of Object.entries(d.axes)) {
         const contrib = w * dir[a];
         fit += contrib;
         if (Math.abs(contrib) > topMag) {
@@ -97,13 +109,15 @@ function rankPerks(c, kind, mode) {
           topAxis = a;
         }
       }
-      return { name, fit, topAxis };
+      return { name, fit, topAxis, note: d.note, power: d[mode] };
     });
 
   if (kind === 'seek') {
+    // Power dominates; playstyle fit breaks ties within a tier.
     return scored
-      .filter((p) => p.fit > 10)
-      .sort((a, b) => b.fit - a.fit)
+      .filter((p) => p.power >= 2)
+      .map((p) => ({ ...p, chase: p.power * 15 + clamp(p.fit, 12) }))
+      .sort((a, b) => b.chase - a.chase)
       .slice(0, 4)
       .map((p) => ({ name: p.name, why: whySeek(p, c) }));
   }
@@ -115,13 +129,17 @@ function rankPerks(c, kind, mode) {
 }
 
 function whySeek(p, c) {
-  const pole = (c[p.topAxis] ?? 50) >= 50 ? 'a' : 'b';
-  return `plays into how ${PHRASE[p.topAxis][pole]}`;
+  if (p.fit > 6 && p.topAxis) {
+    const pole = (c[p.topAxis] ?? 50) >= 50 ? 'a' : 'b';
+    return `${p.note} — fits how ${PHRASE[p.topAxis][pole]}`;
+  }
+  return p.note;
 }
 
 function whyAvoid(p, c) {
+  if (!p.topAxis) return `${p.note} — not built for your game`;
   const pole = (c[p.topAxis] ?? 50) >= 50 ? 'a' : 'b';
-  return `asks for the opposite of how ${PHRASE[p.topAxis][pole]}`;
+  return `${p.note} — works against how ${PHRASE[p.topAxis][pole]}`;
 }
 
 function frameFit(c) {
