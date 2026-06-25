@@ -63,6 +63,7 @@ function slim(def) {
     typeName: def.itemTypeDisplayName ?? '',
     tier: def.inventory?.tierType,
     socketCategories: def.sockets?.socketCategories ?? null,
+    plugCategory: def.plug?.plugCategoryIdentifier ?? null,
   };
 }
 

@@ -122,14 +122,19 @@ function readPerks(def, socketInfo, items) {
   );
   const indexes = cat?.socketIndexes ?? [];
   const sockets = socketInfo?.sockets ?? [];
-  const names = [];
+  const traits = [];
+  const extras = [];
   for (const idx of indexes) {
     const plugHash = sockets[idx]?.plugHash;
     if (!plugHash) continue;
-    const name = items[plugHash]?.name;
-    if (name) names.push(name);
+    const pdef = items[plugHash];
+    if (!pdef?.name) continue;
+    const pc = pdef.plugCategory || '';
+    if (pc.includes('trackers')) continue; // skip Kill Tracker noise
+    if (pc === 'frames') traits.push(pdef.name); // the two random trait columns
+    else extras.push(pdef.name); // barrel / mag / battery / origin
   }
-  return names;
+  return { traits, extras };
 }
 
 function renderVault(weapons) {
@@ -158,13 +163,21 @@ function renderVault(weapons) {
 }
 
 function vaultCard(g) {
-  const copies = g.copies
+  // Collapse copies that share the same two trait perks.
+  const rolls = new Map();
+  for (const c of g.copies) {
+    const key = c.traits.join(' + ') || '\u2014';
+    if (!rolls.has(key)) rolls.set(key, { traits: c.traits, extras: c.extras, count: 0 });
+    rolls.get(key).count += 1;
+  }
+  const rows = [...rolls.values()]
+    .sort((a, b) => b.count - a.count)
     .map(
-      (perks, i) =>
-        `<li><span class="copy-idx">#${i + 1}</span>
-         <span class="copy-perks">${
-           perks.length ? perks.map(escapeHtml).join(' &middot; ') : 'roll unavailable'
-         }</span></li>`
+      (r) => `<li>
+        <span class="roll-count">&times;${r.count}</span>
+        <span class="roll-traits">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
+        <span class="roll-extras">${r.extras.map(escapeHtml).join(' &middot; ')}</span>
+      </li>`
     )
     .join('');
   return `<div class="vault-card">
@@ -172,7 +185,7 @@ function vaultCard(g) {
       <span class="vault-name">${escapeHtml(g.name)}</span>
       <span class="vault-meta">${escapeHtml(g.type || '')} &middot; &times;${g.copies.length}</span>
     </div>
-    <ul class="copy-list">${copies}</ul>
+    <ul class="roll-list">${rows}</ul>
   </div>`;
 }
 

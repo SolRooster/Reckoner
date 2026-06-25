@@ -177,3 +177,15 @@ html, body {
 .copy-list li { display: flex; gap: 10px; align-items: baseline; }
 .copy-idx { color: var(--amber); font-weight: 700; font-size: 0.8rem; min-width: 2.2ch; }
 .copy-perks { color: var(--ink); font-size: 0.9rem; }
+
+.roll-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.roll-list li {
+  display: grid;
+  grid-template-columns: 2.6ch 1fr;
+  grid-template-areas: "count traits" "count extras";
+  column-gap: 10px;
+  align-items: baseline;
+}
+.roll-count { grid-area: count; color: var(--amber); font-weight: 700; font-size: 0.82rem; }
+.roll-traits { grid-area: traits; color: var(--ink); font-weight: 600; font-size: 0.95rem; }
+.roll-extras { grid-area: extras; color: var(--muted); font-size: 0.78rem; }
