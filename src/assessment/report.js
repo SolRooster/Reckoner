@@ -21,6 +21,8 @@ const PERKS_REC = {
   'Killing Tally': { axes: { cadence: 1 }, pve: 2, pvp: 0, role: 'dps', note: 'stacking damage that loves long fights' },
   Frenzy: { axes: {}, pve: 2, pvp: 1, role: 'dps', note: 'free damage, reload and handling once a fight gets going' },
   'Target Lock': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'ramps damage the longer you stay on target — loves SMGs/autos' },
+  'Elemental Honing': { axes: {}, pve: 3, pvp: 1, role: 'dps', note: 'stacking damage from unique elemental hits (15→ 50%) — a current top-tier damage perk' },
+  'Disruption Break': { axes: {}, pve: 2, pvp: 1, role: 'utility', note: 'breaking a shield makes targets take +50% Kinetic damage — strong setup perk' },
 
   // --- PvE add-clear (role: addclear) ---
   'Chain Reaction': { axes: {}, pve: 3, pvp: 0, role: 'addclear', note: 'every kill triggers an elemental blast — pure add-clear' },
@@ -53,7 +55,9 @@ const PERKS_REC = {
   Swashbuckler: { axes: { tempo: 2, range: 1 }, pve: 2, pvp: 2, role: 'dps', note: 'melee or weapon kills spike damage — a close-range monster' },
   'Opening Shot': { axes: { range: -2, soul: -1, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'first shot of a fight gets bonus range and accuracy' },
   Rangefinder: { axes: { range: -2, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'extends effective range while aiming' },
-  'Precision Instrument': { axes: { range: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'consecutive precision hits ramp damage — rewards pure aim' },
+  'Precision Instrument': { axes: { range: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'consecutive precision hits ramp damage — rewards pure aim (pairs with Zen Moment)' },
+  'Lone Wolf': { axes: { range: -1, soul: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'solo bonus to range, handling and reload — for the lone-wolf duelist' },
+  'Fragile Focus': { axes: { range: -2, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'bonus range while your shields hold — strong for ranged duelists' },
   'Moving Target': { axes: { tempo: 1, range: 1 }, pve: 0, pvp: 2, role: 'utility', note: 'better strafe speed and aim assist while moving' },
   'Killing Wind': { axes: { tempo: 1, range: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'a kill grants range, handling and speed' },
   Slideways: { axes: { tempo: 1, soul: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'slide to reload and gain stability — for the aggressive push' },
@@ -63,7 +67,7 @@ const PERKS_REC = {
   'Snapshot Sights': { axes: { range: -1, soul: 1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'lightning-fast ADS — duels and quickscopes' },
 
   // --- Gunfeel / control (Gunslinger-friendly, role: utility) ---
-  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'damage dealt tightens recoil — pure control' },
+  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'damage dealt tightens recoil — pure control, especially strong on controller' },
   'Rapid Hit': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'precision hits boost reload and stability' },
   'Dynamic Sway Reduction': { axes: { soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'sustained fire tightens accuracy — a feel perk' },
   'Perpetual Motion': { axes: { tempo: 1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'stat boost while you keep moving' },
