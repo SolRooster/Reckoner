@@ -52,8 +52,11 @@ function isBuild(p) {
 }
 
 function rollModeScore(traits, mode, dir, focus) {
+  // Build-oriented (Architect) players value loop/build perks; gunfeel players
+  // (Gunslinger) want standalone perks. The Engine axis decides.
+  const architect = !!(dir && dir.engine > 0);
   let base = 0;
-  let keepValue = 0; // standalone power + build power that matches the player's focus
+  let keepValue = 0; // standalone power + build power that fits the player (Architect / focus)
   let fit = 0;
   let focusBoost = 0;
   let recognized = 0;
@@ -65,7 +68,7 @@ function rollModeScore(traits, mode, dir, focus) {
     base += power;
     const buildDependent = isBuild(p);
     const focusMatch = mode === 'pve' && focus && p.role === focus;
-    if (!buildDependent || focusMatch) keepValue += power;
+    if (!buildDependent || architect || focusMatch) keepValue += power;
     if (focusMatch && power > 0) focusBoost += 1;
     if (dir) for (const [a, w] of Object.entries(p.axes || {})) fit += w * dir[a];
   }
@@ -76,9 +79,6 @@ function rollModeScore(traits, mode, dir, focus) {
 // usageKills: number | undefined.  profile: Doctrine profile | null.
 export function gradeGun(group, usageKills, profile) {
   const frameInfo = FRAMES[group.frame] || null;
-  const reconfigurable = group.copies.some(
-    (c) => (c.columns || []).some((col) => (col?.length || 0) > 1)
-  );
   const focus = topFocus(profile);
   const dir = { pve: dirOf(profile, 'pve'), pvp: dirOf(profile, 'pvp') };
   const rolls = dedupeRolls(group.copies).map((r) => {
@@ -145,9 +145,8 @@ export function gradeGun(group, usageKills, profile) {
   rolls.sort((a, b) => rank(b) - rank(a) || b.count - a.count);
   return {
     rolls,
-    reconfigurable,
     frameNote: frameInfo?.note || '',
-    blurb: composeBlurb(group, rolls, profile, focus, reconfigurable),
+    blurb: composeBlurb(group, rolls, profile, focus),
   };
 }
 
@@ -188,16 +187,10 @@ function dedupeRolls(copies) {
   return [...map.values()];
 }
 
-function composeBlurb(group, rolls, profile, focus, reconfigurable) {
+function composeBlurb(group, rolls, profile, focus) {
   const total = group.copies.length;
   const keepers = rolls.filter((r) => r.keep);
   const flexes = rolls.filter((r) => r.flex);
-
-  // What to do with the physical copies.
-  let shardLine = '';
-  if (reconfigurable && total > 1) shardLine = ` Craftable — keep 1, shard the other ${total - 1}.`;
-  else if (reconfigurable) shardLine = ` Craftable — one copy can be any of these.`;
-  else if (total > 1) shardLine = ` Keep your best copy, shard the other ${total - 1}.`;
 
   if (!keepers.length && !flexes.length) {
     if (rolls.some((r) => r.verdict.startsWith('Unsure'))) {
@@ -211,6 +204,14 @@ function composeBlurb(group, rolls, profile, focus, reconfigurable) {
     const star = keepers[0];
     const modeText = keepers.map((k) => k.keepModes.join('+')).join(' & ');
     parts.push(`Best roll: **${star.traits.join(' + ')}** (${modeText}).`);
+    if (total > 1) {
+      const n = star.count;
+      parts.push(
+        n >= total
+          ? `Every copy can roll it — keep 1, shard the rest.`
+          : `${n} of your ${total} copies can roll it — keep ${n === 1 ? 'that one' : 'those'}, shard the rest.`
+      );
+    }
   }
   if (flexes.length) {
     const f = flexes
@@ -218,7 +219,7 @@ function composeBlurb(group, rolls, profile, focus, reconfigurable) {
       .join('; ');
     parts.push(`Flex: ${f}.`);
   }
-  return (parts.join(' ') + shardLine).trim();
+  return parts.join(' ');
 }
 
 function playerPhrase(profile, focus) {
