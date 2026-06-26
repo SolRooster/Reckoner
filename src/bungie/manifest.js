@@ -8,6 +8,9 @@ const DB_NAME = 'reckoner';
 const STORE = 'manifest';
 const KEY = 'items';
 const WEAPON_ITEM_TYPE = 3;
+// Bump when slim()'s shape changes, so stale caches (e.g. missing plugCategory)
+// are discarded and the manifest is re-processed.
+const SCHEMA = 2;
 
 // ---- public API ------------------------------------------------------------
 
@@ -17,7 +20,7 @@ export async function loadItems(onProgress = () => {}) {
   const { version, path } = await getManifestInfo();
 
   const cached = await idbGet(KEY).catch(() => null);
-  if (cached && cached.version === version && cached.items) {
+  if (cached && cached.version === version && cached.schema === SCHEMA && cached.items) {
     onProgress('Loading cached manifest…');
     return cached.items;
   }
@@ -36,7 +39,7 @@ export async function loadItems(onProgress = () => {}) {
     }
   }
 
-  await idbPut(KEY, { version, items }).catch(() => {
+  await idbPut(KEY, { version, schema: SCHEMA, items }).catch(() => {
     /* cache write is best-effort; tool still works without it */
   });
   return items;
