@@ -9,7 +9,7 @@ import { combined } from './profile.js';
 // pve/pvp = power tier in that mode (0 = not eligible, 1 = niche, 2 = strong, 3 = top).
 // role = PvE job: 'addclear' | 'dps' | 'survival' | 'economy' | 'utility'. The player's
 // PvE focus boosts perks whose role matches. Economy/utility never count as PvE "avoid".
-const PERKS_REC = {
+export const PERKS_REC = {
   // --- PvE damage / burst (role: dps) ---
   'Bait and Switch': { axes: { cadence: 2, engine: 1 }, pve: 3, pvp: 0, role: 'dps', note: 'huge burst DPS if you swap across all three weapons' },
   'Firing Line': { axes: { cadence: 2 }, pve: 3, pvp: 0, role: 'dps', note: 'big crit damage when you fight near teammates' },

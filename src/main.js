@@ -89,9 +89,9 @@ async function scanVault(membershipType, membershipId, weaponData) {
   try {
     const items = await loadItems((msg) => renderProgress(msg));
     renderProgress('Reading your vault\u2026');
-    const profile = await getFullProfile(membershipType, membershipId);
-    const weapons = collectWeapons(profile, items);
-    renderVault(weapons, buildUsageMap(weaponData));
+    const bungieProfile = await getFullProfile(membershipType, membershipId);
+    const weapons = collectWeapons(bungieProfile, items);
+    renderVault(weapons, buildUsageMap(weaponData), loadProfile());
   } catch (e) {
     renderError(e.message);
   }
@@ -151,14 +151,20 @@ function readPerks(def, socketInfo, items) {
   return { traits, extras };
 }
 
-function renderVault(weapons, usageMap) {
+function renderVault(weapons, usageMap, doctrine) {
   const byHash = new Map();
   for (const w of weapons) {
     if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, copies: [] });
     byHash.get(w.hash).copies.push(w.perks);
   }
   const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
-  const graded = groups.map((g) => ({ group: g, ...gradeGun(g, usageMap.get(g.name)) }));
+  const graded = groups.map((g) => ({ group: g, ...gradeGun(g, usageMap.get(g.name), doctrine) }));
+
+  const doctrineNote = doctrine
+    ? `<p class="doctrine-note">Graded against your Doctrine &mdash; PvE: <b>${escapeHtml(
+        archetype(doctrine, 'pve')
+      )}</b> \u00b7 PvP: <b>${escapeHtml(archetype(doctrine, 'pvp'))}</b></p>`
+    : `<p class="doctrine-note subtle">No Doctrine yet &mdash; take the Combat Assessment on the dashboard for verdicts tuned to <i>your</i> playstyle.</p>`;
 
   app.innerHTML = `
     <header class="topbar">
@@ -168,6 +174,7 @@ function renderVault(weapons, usageMap) {
     <section class="dash">
       <h2>Your vault: ${weapons.length} legendary weapon${weapons.length === 1 ? '' : 's'},
         ${groups.length} unique.</h2>
+      ${doctrineNote}
       <p class="subtle">The reckoning \u2014 keepers up top, shards called out. Two traits drive every verdict.</p>
       <div class="vault">
         ${graded.map(vaultCard).join('') || '<p class="subtle">No legendary weapons found.</p>'}
