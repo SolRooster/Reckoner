@@ -21,7 +21,9 @@ export const QUESTIONS = [
     section: 'shared',
     q: 'What actually makes you feel powerful?',
     options: [
-      { text: 'An ability loop that never stops — grenade, melee, buffs', axis: { engine: 2 } },
+      { text: 'Almost always an ability loop — grenade, melee, buffs', axis: { engine: 2 } },
+      { text: 'Usually synergy, but I appreciate good gunfeel', axis: { engine: 1 } },
+      { text: 'Usually the gun, but I dabble in builds', axis: { engine: -1 } },
       { text: 'A gun that just feels perfect in my hands', axis: { engine: -2 } },
     ],
   },
@@ -38,7 +40,9 @@ export const QUESTIONS = [
     section: 'shared',
     q: 'Tuning a weapon, you prioritize:',
     options: [
-      { text: 'Perks that trigger off kills and abilities (synergy)', axis: { engine: 2 } },
+      { text: 'Kill / ability-trigger perks every time (synergy)', axis: { engine: 2 } },
+      { text: 'Lean synergy, with an eye on feel', axis: { engine: 1 } },
+      { text: 'Lean feel, with a little synergy', axis: { engine: -1 } },
       { text: 'Raw handling, reload and stability — pure feel', axis: { engine: -2 } },
     ],
   },
@@ -47,6 +51,8 @@ export const QUESTIONS = [
     q: 'Your damage rhythm:',
     options: [
       { text: 'One massive burst, then swap (linear, rocket, sniper)', axis: { cadence: 2 } },
+      { text: 'Mostly burst, with some follow-up', axis: { cadence: 1 } },
+      { text: 'Mostly sustained, with the odd spike', axis: { cadence: -1 } },
       { text: 'Relentless uptime that never stops (trace, auto, scout)', axis: { cadence: -2 } },
     ],
   },
@@ -55,6 +61,8 @@ export const QUESTIONS = [
     q: 'Pick your highlight clip:',
     options: [
       { text: 'A flashy, improbable, high-skill play', axis: { soul: 2 } },
+      { text: 'A stylish play that also worked', axis: { soul: 1 } },
+      { text: 'A smart, low-risk play that won the round', axis: { soul: -1 } },
       { text: 'A clean, efficient, deathless run', axis: { soul: -2 } },
     ],
   },
@@ -62,7 +70,9 @@ export const QUESTIONS = [
     section: 'shared',
     q: 'Loadout philosophy:',
     options: [
-      { text: 'Off-meta stuff that\u2019s fun even if it\u2019s worse', axis: { soul: 2 } },
+      { text: 'Off-meta and fun, even if it\u2019s worse', axis: { soul: 2 } },
+      { text: 'Mostly fun, but it has to be viable', axis: { soul: 1 } },
+      { text: 'Mostly meta, with room for a pet pick', axis: { soul: -1 } },
       { text: 'Best-in-slot, optimized, reliable', axis: { soul: -2 } },
     ],
   },
@@ -73,6 +83,8 @@ export const QUESTIONS = [
     q: 'In a GM Nightfall, your role is:',
     options: [
       { text: 'Front-line — making space, drawing aggro, melee plays', axis: { tempo: 2 } },
+      { text: 'Forward, but I pick my pushes', axis: { tempo: 1 } },
+      { text: 'Back-ish, stepping up when needed', axis: { tempo: -1 } },
       { text: 'Anchor the back, control the room methodically', axis: { tempo: -2 } },
     ],
   },
@@ -135,6 +147,8 @@ export const QUESTIONS = [
     q: 'Your Crucible instinct when you spot someone:',
     options: [
       { text: 'Close the gap — pressure, melee, take the duel', axis: { tempo: 2 } },
+      { text: 'Press the advantage when I have it', axis: { tempo: 1 } },
+      { text: 'Hold unless I\u2019m sure of the trade', axis: { tempo: -1 } },
       { text: 'Reposition for a clean, pre-aimed shot', axis: { tempo: -2 } },
     ],
   },
@@ -151,16 +165,20 @@ export const QUESTIONS = [
     section: 'pvp',
     q: 'An enemy rushes you with a shotgun. You:',
     options: [
-      { text: 'Back up and out-space them with range', axis: { range: -2 } },
       { text: 'Meet them head-on and out-duel up close', axis: { range: 2 } },
+      { text: 'Trade close if I have to', axis: { range: 1 } },
+      { text: 'Give ground and keep my spacing', axis: { range: -1 } },
+      { text: 'Back up and out-space them with range', axis: { range: -2 } },
     ],
   },
   {
     section: 'pvp',
     q: 'Be honest — your aggression in PvP:',
     options: [
-      { text: 'I want to be aggressive; I hunt kills and melee plays', axis: { tempo: 2 } },
-      { text: 'I play disciplined; patience wins the round', axis: { tempo: -2 } },
+      { text: 'Aggressive — I hunt kills and melee plays', axis: { tempo: 2 } },
+      { text: 'Assertive — I push good odds', axis: { tempo: 1 } },
+      { text: 'Measured — I wait for the opening', axis: { tempo: -1 } },
+      { text: 'Disciplined — patience wins the round', axis: { tempo: -2 } },
     ],
   },
   {
@@ -168,6 +186,8 @@ export const QUESTIONS = [
     q: 'Your real edge in the Crucible:',
     options: [
       { text: 'Mechanics and flash — I make the hard play', axis: { soul: 2 } },
+      { text: 'A bit of flair, mostly fundamentals', axis: { soul: 1 } },
+      { text: 'Steady fundamentals with the odd highlight', axis: { soul: -1 } },
       { text: 'Precision and positioning — consistent, every time', axis: { soul: -2 } },
     ],
   },

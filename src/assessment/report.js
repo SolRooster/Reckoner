@@ -23,6 +23,14 @@ const PERKS_REC = {
   'Target Lock': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'ramps damage the longer you stay on target — loves SMGs/autos' },
   'Elemental Honing': { axes: {}, pve: 3, pvp: 1, role: 'dps', note: 'stacking damage from unique elemental hits (15→ 50%) — a current top-tier damage perk' },
   'Disruption Break': { axes: {}, pve: 2, pvp: 1, role: 'utility', note: 'breaking a shield makes targets take +50% Kinetic damage — strong setup perk' },
+  'Multikill Clip': { axes: { cadence: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'reload-after-kills stacks up to +50% damage' },
+  'One for All': { axes: {}, pve: 2, pvp: 0, role: 'dps', note: '+35% damage after tagging three separate targets' },
+  'Focused Fury': { axes: {}, pve: 2, pvp: 1, role: 'dps', note: '+20% damage after half a mag of precision hits' },
+  'Adrenaline Junkie': { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'grenade and weapon kills ramp damage — ability-loop friendly' },
+  Onslaught: { axes: { cadence: -1 }, pve: 2, pvp: 1, role: 'dps', note: 'kills crank fire rate — a sustained-fire monster' },
+  Surrounded: { axes: { range: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'big damage when enemies are near — close-quarters add-clear' },
+  'Master of Arms': { axes: {}, pve: 2, pvp: 2, role: 'dps', note: 'any kind of kill boosts damage — endlessly flexible' },
+  'Chaos Reshaped': { axes: { engine: 1 }, pve: 2, pvp: 0, role: 'economy', note: 'cast your Super to fully reload both weapons — DPS uptime' },
 
   // --- PvE add-clear (role: addclear) ---
   'Chain Reaction': { axes: {}, pve: 3, pvp: 0, role: 'addclear', note: 'every kill triggers an elemental blast — pure add-clear' },
@@ -32,6 +40,7 @@ const PERKS_REC = {
   Dragonfly: { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'precision kills pop an elemental burst' },
   'Kinetic Tremors': { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'sustained hits send a damaging shockwave through targets' },
   'Golden Tricorn': { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'big stack when you mix ability and weapon kills' },
+  Hatchling: { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'addclear', note: 'precision or final blows spawn Threadlings that chase enemies' },
 
   // --- PvE survivability (role: survival) ---
   'Heal Clip': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'survival', note: 'reload after a kill to heal yourself and cure allies — survivability glue' },
@@ -41,6 +50,7 @@ const PERKS_REC = {
   Reconstruction: { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'economy', note: 'auto-refills an oversized mag — sets up a full DPS dump without reloading' },
   'Envious Assassin': { axes: {}, pve: 3, pvp: 0, role: 'economy', note: 'overflows the mag off kills before you swap to a boss' },
   Demolitionist: { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'economy', note: 'kills feed your grenade — ability-loop fuel' },
+  Pugilist: { axes: { engine: 2, range: 1 }, pve: 2, pvp: 1, role: 'economy', note: 'kills charge your melee — fuel for punch-build loops' },
   Overflow: { axes: {}, pve: 2, pvp: 1, role: 'economy', note: 'double mag off a brick — burst before reloading (needs ammo pickups)' },
   'Rewind Rounds': { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'refunds the mag based on hits — endless uptime' },
   Subsistence: { axes: {}, pve: 1, pvp: 1, role: 'economy', note: 'kills top up the mag from reserves' },
