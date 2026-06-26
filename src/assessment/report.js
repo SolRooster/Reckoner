@@ -104,6 +104,8 @@ export const PERKS_REC = {
   'Box Breathing': { axes: { range: -1 }, pve: 2, pvp: 2, role: 'dps', note: 'aim without firing for a big precision-damage spike — sniper/scout staple' },
   'Feeding Frenzy': { axes: {}, pve: 2, pvp: 1, role: 'economy', note: 'rapid kills ramp reload speed' },
   Firefly: { axes: {}, pve: 2, pvp: 0, role: 'addclear', element: 'solar', note: 'precision kills make the target explode — Solar add-clear' },
+  Physic: { axes: {}, pve: 2, pvp: 0, role: 'survival', note: 'hipfire grants the Support Frame\u2019s elemental benefit to YOU too (e.g. Frost Armor) — deep survivability' },
+  'No Distractions': { axes: { range: -1, soul: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'aiming for a moment removes flinch — for the patient, planted gunfighter' },
   Rimestealer: { axes: {}, pve: 2, pvp: 1, role: 'survival', element: 'stasis', note: 'breaking a Stasis crystal grants you Frost Armor — pairs with crystal-makers like Headstone or Crystalline Corpsebloom' },
   Slice: { axes: {}, pve: 2, pvp: 1, role: 'survival', element: 'strand', note: 'hits Sever targets so they deal less damage — Strand survivability/debuff' },
   Tear: { axes: {}, pve: 2, pvp: 0, role: 'survival', element: 'strand', note: 'sustained damage Severs targets and creates a Tangle — Strand control' },

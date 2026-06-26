@@ -145,14 +145,26 @@ function rollSynergyElement(r) {
   return best;
 }
 
+function cartesian(cols) {
+  if (!cols || !cols.length) return [[]];
+  return cols.reduce((acc, col) => acc.flatMap((combo) => col.map((p) => [...combo, p])), [[]]);
+}
+
+// Expands each copy's available column perks into every achievable trait combo,
+// then dedupes. count = how many physical copies can field that combo.
 function dedupeRolls(copies) {
   const map = new Map();
   for (const c of copies) {
-    const key = c.traits.join(' + ') || '\u2014';
-    if (!map.has(key)) {
-      map.set(key, { traits: c.traits, extras: c.extras, count: 0 });
+    const cols = c.columns && c.columns.length ? c.columns : [c.traits || []];
+    const seen = new Set();
+    for (const traits of cartesian(cols)) {
+      const key = traits.join(' + ') || '\u2014';
+      if (!map.has(key)) map.set(key, { traits, extras: c.extras, count: 0 });
+      if (!seen.has(key)) {
+        map.get(key).count += 1;
+        seen.add(key);
+      }
     }
-    map.get(key).count += 1;
   }
   return [...map.values()];
 }
@@ -184,18 +196,15 @@ function composeBlurb(group, rolls, usageKills, profile, focus) {
 
   const parts = [];
   const star = keepers[0];
-  parts.push(`Your roll to beat is **${star.traits.join(' + ')}** — ${perkNote(star.traits)}.`);
+  parts.push(`Your best roll is **${star.traits.join(' + ')}** — ${perkNote(star.traits)}.`);
   const modeText = keepers.map((k) => k.keepModes.join(' + ')).join(' and ');
   parts.push(me ? `Keep it for ${modeText} — it fits ${me}.` : `That's your ${modeText} keeper.`);
   if (flexLine) parts.push(flexLine);
   if (usageKills) {
     parts.push(`You've stacked ${usageKills.toLocaleString()} kills on it, so it's earned the slot.`);
   }
-  const kept =
-    keepers.reduce((s, k) => s + k.count, 0) + flexes.reduce((s, f) => s + f.count, 0);
-  const dupes = total - kept;
-  if (dupes > 0) {
-    parts.push(`The other ${dupes} ${dupes === 1 ? 'copy is' : 'copies are'} vault filler — shard 'em.`);
+  if (total > 1) {
+    parts.push(`You've got ${total} copies — keep one on the roll above and shard the rest.`);
   }
   return parts.join(' ');
 }

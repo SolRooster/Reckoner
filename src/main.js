@@ -10,6 +10,7 @@ import {
 } from './bungie/api.js';
 import { loadItems } from './bungie/manifest.js';
 import { gradeGun } from './engine/verdict.js';
+import { PERKS_REC } from './assessment/report.js';
 import { AXES, QUESTIONS, SHARED_AXES, MODE_AXES } from './assessment/questions.js';
 import { scoreAnswers, archetype, saveProfile, loadProfile } from './assessment/profile.js';
 import { buildReport } from './assessment/report.js';
@@ -118,6 +119,7 @@ function collectWeapons(profile, items) {
   }
 
   const socketData = profile.itemComponents?.sockets?.data ?? {};
+  const reusableData = profile.itemComponents?.reusablePlugs?.data ?? {};
   const weapons = [];
 
   for (const it of stacks) {
@@ -125,9 +127,10 @@ function collectWeapons(profile, items) {
     const def = items[it.itemHash];
     if (!def || def.itemType !== WEAPON_ITEM_TYPE || def.tier !== TIER_LEGENDARY) continue;
     const socketInfo = socketData[it.itemInstanceId];
-    const perks = readPerks(def, socketInfo, items);
+    const reusableInfo = reusableData[it.itemInstanceId];
+    const { columns, extras } = readPerks(def, socketInfo, reusableInfo, items);
     const frame = readFrame(def, socketInfo, items);
-    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, frame, perks });
+    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, frame, columns, extras });
   }
   return weapons;
 }
@@ -144,32 +147,46 @@ function readFrame(def, socketInfo, items) {
   return (plugHash && items[plugHash]?.name) || '';
 }
 
-function readPerks(def, socketInfo, items) {
+// Reads each trait column as the FULL set of available perks (not just the
+// socketed one). For normal random rolls a column has its single rolled perk;
+// for Tier 5 / enhanceable weapons it lists every selectable perk.
+function readPerks(def, socketInfo, reusableInfo, items) {
   const cat = (def.socketCategories ?? []).find(
     (c) => c.socketCategoryHash === WEAPON_PERKS_CATEGORY
   );
   const indexes = cat?.socketIndexes ?? [];
   const sockets = socketInfo?.sockets ?? [];
-  const traits = [];
+  const reusable = reusableInfo?.plugs ?? {};
+  const columns = [];
   const extras = [];
   for (const idx of indexes) {
-    const plugHash = sockets[idx]?.plugHash;
-    if (!plugHash) continue;
-    const pdef = items[plugHash];
-    if (!pdef?.name) continue;
-    const pc = pdef.plugCategory || '';
+    const socketedHash = sockets[idx]?.plugHash;
+    const socketedDef = socketedHash ? items[socketedHash] : null;
+    const pc = socketedDef?.plugCategory || '';
     if (pc.includes('trackers')) continue; // skip Kill Tracker noise
-    if (pc === 'frames') traits.push(pdef.name); // the two random trait columns
-    else extras.push(pdef.name); // barrel / mag / battery / origin
+    if (pc !== 'frames') {
+      if (socketedDef?.name) extras.push(socketedDef.name); // barrel / mag / origin
+      continue;
+    }
+    // The two random trait columns: gather every available perk.
+    let hashes = (reusable[idx] || []).map((p) => p.plugItemHash).filter(Boolean);
+    if (!hashes.length && socketedHash) hashes = [socketedHash];
+    let names = hashes.map((h) => items[h]?.name).filter(Boolean);
+    if (socketedDef?.name) {
+      names = names.filter((n) => n !== socketedDef.name);
+      names.unshift(socketedDef.name); // keep the active perk first
+    }
+    names = [...new Set(names)];
+    if (names.length) columns.push(names);
   }
-  return { traits, extras };
+  return { columns, extras };
 }
 
 function renderVault(weapons, usageMap, doctrine) {
   const byHash = new Map();
   for (const w of weapons) {
     if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, frame: w.frame, copies: [] });
-    byHash.get(w.hash).copies.push(w.perks);
+    byHash.get(w.hash).copies.push({ columns: w.columns, extras: w.extras });
   }
   const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
   const graded = groups.map((g) => ({ group: g, ...gradeGun(g, usageMap.get(g.name), doctrine) }));
@@ -199,17 +216,28 @@ function renderVault(weapons, usageMap, doctrine) {
 }
 
 function vaultCard({ group, rolls, blurb, frameNote }) {
-  const rows = rolls
+  const keepFlex = rolls.filter((r) => r.keep || r.flex);
+  const shards = rolls.filter((r) => !r.keep && !r.flex);
+  const MAX_SHARDS = 6;
+  const visible = [...keepFlex, ...shards.slice(0, MAX_SHARDS)];
+  const hidden = Math.max(0, shards.length - MAX_SHARDS);
+  const perkTip = (t) => (PERKS_REC[t]?.note ? `${t}: ${PERKS_REC[t].note}` : t);
+
+  const rows = visible
     .map((r) => {
       const cls = r.keep ? 'keep' : r.flex ? 'flex' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
+      const tip = escapeHtml(r.traits.map(perkTip).join(' \u2014 '));
       return `<li>
         <span class="roll-count">&times;${r.count}</span>
-        <span class="roll-traits">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
+        <span class="roll-traits" title="${tip}">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
         <span class="roll-extras">${r.extras.map(escapeHtml).join(' &middot; ')}</span>
         <span class="roll-verdict ${cls}">${escapeHtml(r.verdict)}</span>
       </li>`;
     })
     .join('');
+  const moreLine = hidden > 0
+    ? `<li class="roll-more subtle">+${hidden} more shardable roll${hidden === 1 ? '' : 's'}</li>`
+    : '';
   const archetype = [group.frame, group.type].filter(Boolean).join(' \u00b7 ') || group.type || '';
   return `<div class="vault-card">
     <div class="vault-head">
@@ -218,7 +246,7 @@ function vaultCard({ group, rolls, blurb, frameNote }) {
     </div>
     ${frameNote ? `<p class="frame-note">${escapeHtml(frameNote)}</p>` : ''}
     <p class="vault-blurb">${renderBlurb(blurb)}</p>
-    <ul class="roll-list">${rows}</ul>
+    <ul class="roll-list">${rows}${moreLine}</ul>
   </div>`;
 }
 

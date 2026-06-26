@@ -36,9 +36,10 @@ export function getProfile(membershipType, membershipId, components) {
   return bungie(`Destiny2/${membershipType}/Profile/${membershipId}/?components=${q}`);
 }
 
-// Everything needed to read every weapon and its rolled perks.
+// Everything needed to read every weapon, its rolled perks, and the full set of
+// AVAILABLE perks per column (310 = reusable plugs, for Tier 5 / enhanceable).
 export function getFullProfile(membershipType, membershipId) {
-  return getProfile(membershipType, membershipId, [102, 201, 205, 300, 305]);
+  return getProfile(membershipType, membershipId, [102, 201, 205, 300, 305, 310]);
 }
 
 // Lifetime historical stats merged across all characters (PvE / PvP split).
