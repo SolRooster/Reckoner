@@ -10,6 +10,19 @@ const MODE_LABEL = { pve: 'PvE', pvp: 'PvP' };
 const AXIS_KEYS = ['tempo', 'range', 'engine', 'cadence', 'soul'];
 const ELEMENT_LABEL = { stasis: 'Stasis', arc: 'Arc', void: 'Void', solar: 'Solar', strand: 'Strand' };
 
+// Weapon frame context. pvp:false / pve:false hard-block that mode (e.g. a
+// Support Frame heals allies — it's a PvE tool, never a Crucible verdict).
+const FRAMES = {
+  'Support Frame': { pvp: false, note: 'Support Frame — heals allies on hipfire. A PvE support tool, not a duelist.' },
+  'Wave Frame': { pvp: false, note: 'Wave Frame — a PvE add-clear wave, not a Crucible pick.' },
+  'High-Impact Frame': { note: 'High-Impact Frame — slow and hard-hitting; rewards calm, planted aim over run-and-gun.' },
+  'Lightweight Frame': { note: 'Lightweight Frame — extra move speed; built for aggressive, mobile play.' },
+  'Rapid-Fire Frame': { note: 'Rapid-Fire Frame — fast and forgiving, with deeper mags and faster empty reloads.' },
+  'Aggressive Frame': { note: 'Aggressive Frame — heavy hitter that wants you in their face.' },
+  'Adaptive Frame': { note: 'Adaptive Frame — the all-rounder; flexible across ranges.' },
+  'Precision Frame': { note: 'Precision Frame — tight recoil and reliable, consistent damage.' },
+};
+
 function clamp(x, m) {
   return Math.max(-m, Math.min(m, x));
 }
@@ -51,6 +64,7 @@ function rollModeScore(traits, mode, dir, focus) {
 // group: { name, type, copies: [{ traits, extras }] }
 // usageKills: number | undefined.  profile: Doctrine profile | null.
 export function gradeGun(group, usageKills, profile) {
+  const frameInfo = FRAMES[group.frame] || null;
   const focus = topFocus(profile);
   const dir = { pve: dirOf(profile, 'pve'), pvp: dirOf(profile, 'pvp') };
   const rolls = dedupeRolls(group.copies).map((r) => {
@@ -60,9 +74,11 @@ export function gradeGun(group, usageKills, profile) {
     return r;
   });
 
-  // Best roll per mode (must clear a meaningful power floor).
+  // Best roll per mode (must clear a meaningful power floor; skip modes the
+  // frame can't play, e.g. a Support Frame in PvP).
   const best = {};
   for (const mode of MODES) {
+    if (frameInfo && frameInfo[mode] === false) continue;
     let b = null;
     for (const r of rolls) {
       if (r[mode].base < 1) continue;
@@ -113,7 +129,7 @@ export function gradeGun(group, usageKills, profile) {
 
   const rank = (r) => (r.keep ? 2 : r.flex ? 1 : 0);
   rolls.sort((a, b) => rank(b) - rank(a) || b.count - a.count);
-  return { rolls, blurb: composeBlurb(group, rolls, usageKills, profile, focus) };
+  return { rolls, blurb: composeBlurb(group, rolls, usageKills, profile, focus), frameNote: frameInfo?.note || '' };
 }
 
 function rollSynergyElement(r) {

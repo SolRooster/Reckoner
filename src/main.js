@@ -124,10 +124,24 @@ function collectWeapons(profile, items) {
     if (!it.itemInstanceId) continue;
     const def = items[it.itemHash];
     if (!def || def.itemType !== WEAPON_ITEM_TYPE || def.tier !== TIER_LEGENDARY) continue;
-    const perks = readPerks(def, socketData[it.itemInstanceId], items);
-    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, perks });
+    const socketInfo = socketData[it.itemInstanceId];
+    const perks = readPerks(def, socketInfo, items);
+    const frame = readFrame(def, socketInfo, items);
+    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, frame, perks });
   }
   return weapons;
+}
+
+const INTRINSIC_CATEGORY = 3956125808; // "INTRINSIC TRAITS" socket category = the frame
+
+function readFrame(def, socketInfo, items) {
+  const cat = (def.socketCategories ?? []).find(
+    (c) => c.socketCategoryHash === INTRINSIC_CATEGORY
+  );
+  const idx = cat?.socketIndexes?.[0];
+  if (idx == null) return '';
+  const plugHash = socketInfo?.sockets?.[idx]?.plugHash;
+  return (plugHash && items[plugHash]?.name) || '';
 }
 
 function readPerks(def, socketInfo, items) {
@@ -154,7 +168,7 @@ function readPerks(def, socketInfo, items) {
 function renderVault(weapons, usageMap, doctrine) {
   const byHash = new Map();
   for (const w of weapons) {
-    if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, copies: [] });
+    if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, frame: w.frame, copies: [] });
     byHash.get(w.hash).copies.push(w.perks);
   }
   const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
@@ -184,7 +198,7 @@ function renderVault(weapons, usageMap, doctrine) {
   document.querySelector('#back').addEventListener('click', () => boot());
 }
 
-function vaultCard({ group, rolls, blurb }) {
+function vaultCard({ group, rolls, blurb, frameNote }) {
   const rows = rolls
     .map((r) => {
       const cls = r.keep ? 'keep' : r.flex ? 'flex' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
@@ -196,11 +210,13 @@ function vaultCard({ group, rolls, blurb }) {
       </li>`;
     })
     .join('');
+  const archetype = [group.frame, group.type].filter(Boolean).join(' \u00b7 ') || group.type || '';
   return `<div class="vault-card">
     <div class="vault-head">
       <span class="vault-name">${escapeHtml(group.name)}</span>
-      <span class="vault-meta">${escapeHtml(group.type || '')} &middot; &times;${group.copies.length}</span>
+      <span class="vault-meta">${escapeHtml(archetype)} &middot; &times;${group.copies.length}</span>
     </div>
+    ${frameNote ? `<p class="frame-note">${escapeHtml(frameNote)}</p>` : ''}
     <p class="vault-blurb">${renderBlurb(blurb)}</p>
     <ul class="roll-list">${rows}</ul>
   </div>`;

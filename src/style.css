@@ -274,5 +274,9 @@ html, body {
 .roll-verdict.shard { background: rgba(255, 90, 78, 0.14); color: #ff8a80; }
 .roll-verdict.unsure { background: rgba(245, 185, 66, 0.14); color: var(--amber); }
 
+.frame-note {
+  margin: 0 0 10px; font-size: 0.82rem; color: var(--muted); font-style: italic;
+  border-left: 2px solid var(--line); padding-left: 10px;
+}
 .vault-blurb { margin: 0 0 12px; color: var(--ink); font-size: 0.9rem; line-height: 1.5; }
 .vault-blurb strong { color: var(--amber); }

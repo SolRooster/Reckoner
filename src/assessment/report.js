@@ -103,6 +103,10 @@ export const PERKS_REC = {
   Adagio: { axes: { cadence: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'a kill trades fire rate for +20-27% damage' },
   'Box Breathing': { axes: { range: -1 }, pve: 2, pvp: 2, role: 'dps', note: 'aim without firing for a big precision-damage spike — sniper/scout staple' },
   'Feeding Frenzy': { axes: {}, pve: 2, pvp: 1, role: 'economy', note: 'rapid kills ramp reload speed' },
+  Firefly: { axes: {}, pve: 2, pvp: 0, role: 'addclear', element: 'solar', note: 'precision kills make the target explode — Solar add-clear' },
+  Rimestealer: { axes: {}, pve: 2, pvp: 1, role: 'survival', element: 'stasis', note: 'breaking a Stasis crystal grants you Frost Armor — pairs with crystal-makers like Headstone or Crystalline Corpsebloom' },
+  Slice: { axes: {}, pve: 2, pvp: 1, role: 'survival', element: 'strand', note: 'hits Sever targets so they deal less damage — Strand survivability/debuff' },
+  Tear: { axes: {}, pve: 2, pvp: 0, role: 'survival', element: 'strand', note: 'sustained damage Severs targets and creates a Tangle — Strand control' },
 };
 
 // How to describe the player's own tendency on each axis pole.
