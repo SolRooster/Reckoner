@@ -84,6 +84,25 @@ export const PERKS_REC = {
 
   // --- Point-blank (mismatch for ranged/mobile players, role: utility) ---
   'Threat Detector': { axes: { range: 2 }, pve: 1, pvp: 1, role: 'utility', note: 'buffs reload and stability when enemies are close — rewards point-blank' },
+
+  // --- Added from live research (Renegades/Heresy era + vault coverage) ---
+  'Detonator Beam': { axes: { cadence: -1 }, pve: 3, pvp: 1, role: 'dps', note: 'sustained trace fire detonates AoE around the target (~30% more) — turns traces into Major/Champion DPS' },
+  Demoralize: { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', note: 'precision final blows Weaken nearby foes (+15% damage taken) — Void add-clear, pairs with Destabilizing Rounds' },
+  'Rolling Storm': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', note: 'builds Bolt Charge, then unleashes Arc damage — strong Arc add-clear' },
+  'Jolting Feedback': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', note: 'rapid hits jolt the target — chains Arc damage between enemies' },
+  Butterfly: { axes: { range: -1 }, pve: 2, pvp: 1, role: 'addclear', note: 'aim briefly, then your next final blow makes the target explode — rewards precision' },
+  'Chill Clip': { axes: {}, pve: 2, pvp: 2, role: 'survival', note: 'shots apply Slow and can Freeze — Stasis crowd-control and a safety/uptime staple' },
+  'Crystalline Corpsebloom': { axes: {}, pve: 2, pvp: 0, role: 'addclear', note: 'Stasis final blows spawn crystals for shatter damage and Frost' },
+  'Supercharged Magazine': { axes: { engine: 1 }, pve: 2, pvp: 0, role: 'economy', note: 'while Amplified, ammo reloads from reserves — Arc-build uptime' },
+  'Shoot to Loot': { axes: { range: -1 }, pve: 2, pvp: 0, role: 'economy', note: 'shoot ammo bricks to grab them at range — feeds you and the team' },
+  'Lead from Gold': { axes: {}, pve: 1, pvp: 0, role: 'economy', note: 'heavy-ammo bricks reload this weapon from reserves' },
+  'Grave Robber': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'economy', note: 'melee kills reload the mag — fuel for close, punchy play' },
+  'Sleight of Hand': { axes: {}, pve: 2, pvp: 1, role: 'dps', note: 'melee final blows boost handling, reload and damage' },
+  'Auto-Loading Holster': { axes: {}, pve: 2, pvp: 1, role: 'economy', note: 'stow to auto-reload — perfect for DPS swap rotations' },
+  'Closing Time': { axes: { range: 1 }, pve: 1, pvp: 2, role: 'utility', note: 'near-empty mag boosts handling and reload' },
+  Adagio: { axes: { cadence: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'a kill trades fire rate for +20-27% damage' },
+  'Box Breathing': { axes: { range: -1 }, pve: 2, pvp: 2, role: 'dps', note: 'aim without firing for a big precision-damage spike — sniper/scout staple' },
+  'Feeding Frenzy': { axes: {}, pve: 2, pvp: 1, role: 'economy', note: 'rapid kills ramp reload speed' },
 };
 
 // How to describe the player's own tendency on each axis pole.
