@@ -8,6 +8,7 @@ import { combined } from '../assessment/profile.js';
 const MODES = ['pve', 'pvp'];
 const MODE_LABEL = { pve: 'PvE', pvp: 'PvP' };
 const AXIS_KEYS = ['tempo', 'range', 'engine', 'cadence', 'soul'];
+const ELEMENT_LABEL = { stasis: 'Stasis', arc: 'Arc', void: 'Void', solar: 'Solar', strand: 'Strand' };
 
 function clamp(x, m) {
   return Math.max(-m, Math.min(m, x));
@@ -92,8 +93,40 @@ export function gradeGun(group, usageKills, profile) {
     }
   }
 
-  rolls.sort((a, b) => Number(b.keep) - Number(a.keep) || b.count - a.count);
+  // Flex: keep the best non-keeper roll per synergy element — a roll worth
+  // holding for when you build that subclass. Works for element-agnostic players
+  // who rotate builds (keep one Stasis flavor, one Void flavor, etc.).
+  const flexByElement = {};
+  for (const r of rolls) {
+    if (r.keep) continue;
+    const syn = rollSynergyElement(r);
+    if (!syn) continue;
+    const cur = flexByElement[syn.element];
+    if (!cur || syn.strength > cur.strength) flexByElement[syn.element] = { roll: r, strength: syn.strength };
+  }
+  for (const element of Object.keys(flexByElement)) {
+    const r = flexByElement[element].roll;
+    r.flex = true;
+    r.flexElement = element;
+    r.verdict = `Flex (${ELEMENT_LABEL[element]})`;
+  }
+
+  const rank = (r) => (r.keep ? 2 : r.flex ? 1 : 0);
+  rolls.sort((a, b) => rank(b) - rank(a) || b.count - a.count);
   return { rolls, blurb: composeBlurb(group, rolls, usageKills, profile, focus) };
+}
+
+function rollSynergyElement(r) {
+  let best = null;
+  for (const t of r.traits) {
+    const p = PERKS_REC[t];
+    if (!p?.element) continue;
+    const strength = Math.max(p.pve || 0, p.pvp || 0);
+    if (strength >= 2 && (!best || strength > best.strength)) {
+      best = { element: p.element, strength };
+    }
+  }
+  return best;
 }
 
 function dedupeRolls(copies) {
@@ -111,9 +144,19 @@ function dedupeRolls(copies) {
 function composeBlurb(group, rolls, usageKills, profile, focus) {
   const total = group.copies.length;
   const keepers = rolls.filter((r) => r.keep);
+  const flexes = rolls.filter((r) => r.flex);
   const me = profile ? playerPhrase(profile, focus) : null;
 
+  const flexLine = flexes.length
+    ? `Hang onto ${flexes.length === 1 ? 'one' : flexes.length} as a Flex — ${flexes
+        .map((f) => `the ${f.traits.join(' + ')} roll pops on ${ELEMENT_LABEL[f.flexElement]} builds`)
+        .join('; ')}.`
+    : '';
+
   if (!keepers.length) {
+    if (flexes.length) {
+      return `No universal keeper here, but it's not all glimmer. ${flexLine} Shard the rest.`;
+    }
     const anyUnsure = rolls.some((r) => r.verdict.startsWith('Unsure'));
     if (anyUnsure) {
       return `A couple of these perks aren't in my book yet — eyeball the "Unsure" rolls before you shard. The rest don't earn their slot.`;
@@ -128,11 +171,13 @@ function composeBlurb(group, rolls, usageKills, profile, focus) {
   parts.push(`Your roll to beat is **${star.traits.join(' + ')}** — ${perkNote(star.traits)}.`);
   const modeText = keepers.map((k) => k.keepModes.join(' + ')).join(' and ');
   parts.push(me ? `Keep it for ${modeText} — it fits ${me}.` : `That's your ${modeText} keeper.`);
-
+  if (flexLine) parts.push(flexLine);
   if (usageKills) {
     parts.push(`You've stacked ${usageKills.toLocaleString()} kills on it, so it's earned the slot.`);
   }
-  const dupes = total - keepers.reduce((s, k) => s + k.count, 0);
+  const kept =
+    keepers.reduce((s, k) => s + k.count, 0) + flexes.reduce((s, f) => s + f.count, 0);
+  const dupes = total - kept;
   if (dupes > 0) {
     parts.push(`The other ${dupes} ${dupes === 1 ? 'copy is' : 'copies are'} vault filler — shard 'em.`);
   }

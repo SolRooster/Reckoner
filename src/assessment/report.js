@@ -34,17 +34,17 @@ export const PERKS_REC = {
 
   // --- PvE add-clear (role: addclear) ---
   'Chain Reaction': { axes: {}, pve: 3, pvp: 0, role: 'addclear', note: 'every kill triggers an elemental blast — pure add-clear' },
-  Incandescent: { axes: {}, pve: 3, pvp: 1, role: 'addclear', note: 'kills scatter scorch — a Solar add-clear staple' },
-  Voltshot: { axes: { engine: 2 }, pve: 3, pvp: 1, role: 'addclear', note: 'reload-on-kill to jolt the next target' },
-  'Destabilizing Rounds': { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'addclear', note: 'kills make targets volatile for chain explosions' },
+  Incandescent: { axes: {}, pve: 3, pvp: 1, role: 'addclear', element: 'solar', note: 'kills scatter scorch — a Solar add-clear staple' },
+  Voltshot: { axes: { engine: 2 }, pve: 3, pvp: 1, role: 'addclear', element: 'arc', note: 'reload-on-kill to jolt the next target' },
+  'Destabilizing Rounds': { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'addclear', element: 'void', note: 'kills make targets volatile for chain explosions' },
   Dragonfly: { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'precision kills pop an elemental burst' },
   'Kinetic Tremors': { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'sustained hits send a damaging shockwave through targets' },
   'Golden Tricorn': { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'big stack when you mix ability and weapon kills' },
-  Hatchling: { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'addclear', note: 'precision or final blows spawn Threadlings that chase enemies' },
+  Hatchling: { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'addclear', element: 'strand', note: 'precision or final blows spawn Threadlings that chase enemies' },
 
   // --- PvE survivability (role: survival) ---
   'Heal Clip': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'survival', note: 'reload after a kill to heal yourself and cure allies — survivability glue' },
-  'Repulsor Brace': { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'survival', note: 'Void kills grant an overshield — keeps you alive in the thick of it' },
+  'Repulsor Brace': { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'survival', element: 'void', note: 'Void kills grant an overshield — keeps you alive in the thick of it' },
 
   // --- PvE economy / uptime (role: economy — never a PvE "avoid") ---
   Reconstruction: { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'economy', note: 'auto-refills an oversized mag — sets up a full DPS dump without reloading' },
@@ -87,13 +87,13 @@ export const PERKS_REC = {
 
   // --- Added from live research (Renegades/Heresy era + vault coverage) ---
   'Detonator Beam': { axes: { cadence: -1 }, pve: 3, pvp: 1, role: 'dps', note: 'sustained trace fire detonates AoE around the target (~30% more) — turns traces into Major/Champion DPS' },
-  Demoralize: { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', note: 'precision final blows Weaken nearby foes (+15% damage taken) — Void add-clear, pairs with Destabilizing Rounds' },
-  'Rolling Storm': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', note: 'builds Bolt Charge, then unleashes Arc damage — strong Arc add-clear' },
-  'Jolting Feedback': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', note: 'rapid hits jolt the target — chains Arc damage between enemies' },
+  Demoralize: { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', element: 'void', note: 'precision final blows Weaken nearby foes (+15% damage taken) — Void add-clear, pairs with Destabilizing Rounds' },
+  'Rolling Storm': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', element: 'arc', note: 'builds Bolt Charge, then unleashes Arc damage — strong Arc add-clear' },
+  'Jolting Feedback': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'addclear', element: 'arc', note: 'rapid hits jolt the target — chains Arc damage between enemies' },
   Butterfly: { axes: { range: -1 }, pve: 2, pvp: 1, role: 'addclear', note: 'aim briefly, then your next final blow makes the target explode — rewards precision' },
-  'Chill Clip': { axes: {}, pve: 2, pvp: 2, role: 'survival', note: 'shots apply Slow and can Freeze — Stasis crowd-control and a safety/uptime staple' },
-  'Crystalline Corpsebloom': { axes: {}, pve: 2, pvp: 0, role: 'addclear', note: 'Stasis final blows spawn crystals for shatter damage and Frost' },
-  'Supercharged Magazine': { axes: { engine: 1 }, pve: 2, pvp: 0, role: 'economy', note: 'while Amplified, ammo reloads from reserves — Arc-build uptime' },
+  'Chill Clip': { axes: {}, pve: 2, pvp: 2, role: 'survival', element: 'stasis', note: 'shots apply Slow and can Freeze — Stasis crowd-control and a safety/uptime staple' },
+  'Crystalline Corpsebloom': { axes: {}, pve: 2, pvp: 0, role: 'addclear', element: 'stasis', note: 'Stasis final blows spawn crystals for shatter damage and Frost' },
+  'Supercharged Magazine': { axes: { engine: 1 }, pve: 2, pvp: 0, role: 'economy', element: 'arc', note: 'while Amplified, ammo reloads from reserves — Arc-build uptime' },
   'Shoot to Loot': { axes: { range: -1 }, pve: 2, pvp: 0, role: 'economy', note: 'shoot ammo bricks to grab them at range — feeds you and the team' },
   'Lead from Gold': { axes: {}, pve: 1, pvp: 0, role: 'economy', note: 'heavy-ammo bricks reload this weapon from reserves' },
   'Grave Robber': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'economy', note: 'melee kills reload the mag — fuel for close, punchy play' },

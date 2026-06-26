@@ -187,7 +187,7 @@ function renderVault(weapons, usageMap, doctrine) {
 function vaultCard({ group, rolls, blurb }) {
   const rows = rolls
     .map((r) => {
-      const cls = r.keep ? 'keep' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
+      const cls = r.keep ? 'keep' : r.flex ? 'flex' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
       return `<li>
         <span class="roll-count">&times;${r.count}</span>
         <span class="roll-traits">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
