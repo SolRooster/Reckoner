@@ -44,8 +44,16 @@ function topFocus(profile) {
   return best && (f[best] || 0) > 0 ? best : null;
 }
 
+// A perk is "build-dependent" if it only shines inside a loop/subclass build
+// (element-tagged perks, or those explicitly flagged). Standalone perks are
+// good on their own — those should win the Keep; build perks fall to Flex.
+function isBuild(p) {
+  return !!(p.element || p.build);
+}
+
 function rollModeScore(traits, mode, dir, focus) {
   let base = 0;
+  let keepValue = 0; // standalone power + build power that matches the player's focus
   let fit = 0;
   let focusBoost = 0;
   let recognized = 0;
@@ -55,16 +63,22 @@ function rollModeScore(traits, mode, dir, focus) {
     recognized += 1;
     const power = p[mode] || 0;
     base += power;
+    const buildDependent = isBuild(p);
+    const focusMatch = mode === 'pve' && focus && p.role === focus;
+    if (!buildDependent || focusMatch) keepValue += power;
+    if (focusMatch && power > 0) focusBoost += 1;
     if (dir) for (const [a, w] of Object.entries(p.axes || {})) fit += w * dir[a];
-    if (mode === 'pve' && focus && p.role === focus && power > 0) focusBoost += 1;
   }
-  return { base, score: base * 10 + clamp(fit, 12) + focusBoost * 8, recognized };
+  return { base, keepValue, score: keepValue * 10 + clamp(fit, 8) + focusBoost * 8, recognized };
 }
 
 // group: { name, type, copies: [{ traits, extras }] }
 // usageKills: number | undefined.  profile: Doctrine profile | null.
 export function gradeGun(group, usageKills, profile) {
   const frameInfo = FRAMES[group.frame] || null;
+  const reconfigurable = group.copies.some(
+    (c) => (c.columns || []).some((col) => (col?.length || 0) > 1)
+  );
   const focus = topFocus(profile);
   const dir = { pve: dirOf(profile, 'pve'), pvp: dirOf(profile, 'pvp') };
   const rolls = dedupeRolls(group.copies).map((r) => {
@@ -74,19 +88,19 @@ export function gradeGun(group, usageKills, profile) {
     return r;
   });
 
-  // Best roll per mode (must clear a meaningful power floor; skip modes the
-  // frame can't play, e.g. a Support Frame in PvP).
+  // Best roll per mode — ranked by standalone (Keep) value, not raw power, so
+  // build-dependent perks don't steal the Keep. Skip modes the frame can't play.
   const best = {};
   for (const mode of MODES) {
     if (frameInfo && frameInfo[mode] === false) continue;
     let b = null;
     for (const r of rolls) {
-      if (r[mode].base < 1) continue;
+      if (r[mode].keepValue < 2) continue;
       if (!b || r[mode].score > b[mode].score || (r[mode].score === b[mode].score && r.count > b.count)) {
         b = r;
       }
     }
-    if (b && b[mode].base >= 2) best[mode] = b;
+    if (b) best[mode] = b;
   }
 
   for (const r of rolls) {
@@ -129,7 +143,12 @@ export function gradeGun(group, usageKills, profile) {
 
   const rank = (r) => (r.keep ? 2 : r.flex ? 1 : 0);
   rolls.sort((a, b) => rank(b) - rank(a) || b.count - a.count);
-  return { rolls, blurb: composeBlurb(group, rolls, usageKills, profile, focus), frameNote: frameInfo?.note || '' };
+  return {
+    rolls,
+    reconfigurable,
+    frameNote: frameInfo?.note || '',
+    blurb: composeBlurb(group, rolls, profile, focus, reconfigurable),
+  };
 }
 
 function rollSynergyElement(r) {
@@ -169,44 +188,37 @@ function dedupeRolls(copies) {
   return [...map.values()];
 }
 
-function composeBlurb(group, rolls, usageKills, profile, focus) {
+function composeBlurb(group, rolls, profile, focus, reconfigurable) {
   const total = group.copies.length;
   const keepers = rolls.filter((r) => r.keep);
   const flexes = rolls.filter((r) => r.flex);
-  const me = profile ? playerPhrase(profile, focus) : null;
 
-  const flexLine = flexes.length
-    ? `Hang onto ${flexes.length === 1 ? 'one' : flexes.length} as a Flex — ${flexes
-        .map((f) => `the ${f.traits.join(' + ')} roll pops on ${ELEMENT_LABEL[f.flexElement]} builds`)
-        .join('; ')}.`
-    : '';
+  // What to do with the physical copies.
+  let shardLine = '';
+  if (reconfigurable && total > 1) shardLine = ` Craftable — keep 1, shard the other ${total - 1}.`;
+  else if (reconfigurable) shardLine = ` Craftable — one copy can be any of these.`;
+  else if (total > 1) shardLine = ` Keep your best copy, shard the other ${total - 1}.`;
 
-  if (!keepers.length) {
-    if (flexes.length) {
-      return `No universal keeper here, but it's not all glimmer. ${flexLine} Shard the rest.`;
+  if (!keepers.length && !flexes.length) {
+    if (rolls.some((r) => r.verdict.startsWith('Unsure'))) {
+      return `Some perks here aren't in my book yet — check the "Unsure" rolls, then shard the rest.`;
     }
-    const anyUnsure = rolls.some((r) => r.verdict.startsWith('Unsure'));
-    if (anyUnsure) {
-      return `A couple of these perks aren't in my book yet — eyeball the "Unsure" rolls before you shard. The rest don't earn their slot.`;
-    }
-    return me
-      ? `Nothing here fits ${me} — no real damage, survival, or duel value for how you play. Shard all ${total}.`
-      : `None of these rolls do enough. Shard the stack of ${total} and take the glimmer.`;
+    return `Nothing here earns a slot for how you play. Shard all ${total}.`;
   }
 
   const parts = [];
-  const star = keepers[0];
-  parts.push(`Your best roll is **${star.traits.join(' + ')}** — ${perkNote(star.traits)}.`);
-  const modeText = keepers.map((k) => k.keepModes.join(' + ')).join(' and ');
-  parts.push(me ? `Keep it for ${modeText} — it fits ${me}.` : `That's your ${modeText} keeper.`);
-  if (flexLine) parts.push(flexLine);
-  if (usageKills) {
-    parts.push(`You've stacked ${usageKills.toLocaleString()} kills on it, so it's earned the slot.`);
+  if (keepers.length) {
+    const star = keepers[0];
+    const modeText = keepers.map((k) => k.keepModes.join('+')).join(' & ');
+    parts.push(`Best roll: **${star.traits.join(' + ')}** (${modeText}).`);
   }
-  if (total > 1) {
-    parts.push(`You've got ${total} copies — keep one on the roll above and shard the rest.`);
+  if (flexes.length) {
+    const f = flexes
+      .map((x) => `${x.traits.join(' + ')} for ${ELEMENT_LABEL[x.flexElement]} builds`)
+      .join('; ');
+    parts.push(`Flex: ${f}.`);
   }
-  return parts.join(' ');
+  return (parts.join(' ') + shardLine).trim();
 }
 
 function playerPhrase(profile, focus) {

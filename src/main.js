@@ -215,20 +215,23 @@ function renderVault(weapons, usageMap, doctrine) {
   document.querySelector('#back').addEventListener('click', () => boot());
 }
 
-function vaultCard({ group, rolls, blurb, frameNote }) {
+function vaultCard({ group, rolls, blurb, frameNote, reconfigurable }) {
   const keepFlex = rolls.filter((r) => r.keep || r.flex);
   const shards = rolls.filter((r) => !r.keep && !r.flex);
   const MAX_SHARDS = 6;
-  const visible = [...keepFlex, ...shards.slice(0, MAX_SHARDS)];
-  const hidden = Math.max(0, shards.length - MAX_SHARDS);
+  // Craftable guns: every combo is achievable on one copy, so only show the
+  // recommended rolls — the shard "combos" aren't separate guns.
+  const visible = reconfigurable ? keepFlex : [...keepFlex, ...shards.slice(0, MAX_SHARDS)];
+  const hidden = reconfigurable ? 0 : Math.max(0, shards.length - MAX_SHARDS);
   const perkTip = (t) => (PERKS_REC[t]?.note ? `${t}: ${PERKS_REC[t].note}` : t);
 
   const rows = visible
     .map((r) => {
       const cls = r.keep ? 'keep' : r.flex ? 'flex' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
       const tip = escapeHtml(r.traits.map(perkTip).join(' \u2014 '));
+      const count = reconfigurable ? '' : `&times;${r.count}`;
       return `<li>
-        <span class="roll-count">&times;${r.count}</span>
+        <span class="roll-count">${count}</span>
         <span class="roll-traits" title="${tip}">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
         <span class="roll-extras">${r.extras.map(escapeHtml).join(' &middot; ')}</span>
         <span class="roll-verdict ${cls}">${escapeHtml(r.verdict)}</span>

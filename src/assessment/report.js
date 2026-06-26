@@ -13,7 +13,7 @@ export const PERKS_REC = {
   // --- PvE damage / burst (role: dps) ---
   'Bait and Switch': { axes: { cadence: 2, engine: 1 }, pve: 3, pvp: 0, role: 'dps', note: 'huge burst DPS if you swap across all three weapons' },
   'Firing Line': { axes: { cadence: 2 }, pve: 3, pvp: 0, role: 'dps', note: 'big crit damage when you fight near teammates' },
-  'Aggregate Charge': { axes: { engine: 2, cadence: 1 }, pve: 3, pvp: 0, role: 'dps', note: 'scales with unique debuffs — elite for Void/Prismatic loops, dead weight without them' },
+  'Aggregate Charge': { axes: { engine: 2, cadence: 1 }, pve: 3, pvp: 0, role: 'dps', build: true, note: 'scales with unique debuffs — elite for Void/Prismatic loops, dead weight without them' },
   'Controlled Burst': { axes: { soul: -1 }, pve: 3, pvp: 2, role: 'dps', note: 'fusion perk — perfect bolts ramp damage; strong both ways' },
   'Vorpal Weapon': { axes: {}, pve: 2, pvp: 1, role: 'dps', note: 'flat bonus damage to bosses, majors and supers' },
   'Reservoir Burst': { axes: { cadence: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'a full mag hits harder and explodes' },
@@ -39,7 +39,7 @@ export const PERKS_REC = {
   'Destabilizing Rounds': { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'addclear', element: 'void', note: 'kills make targets volatile for chain explosions' },
   Dragonfly: { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'precision kills pop an elemental burst' },
   'Kinetic Tremors': { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'sustained hits send a damaging shockwave through targets' },
-  'Golden Tricorn': { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'big stack when you mix ability and weapon kills' },
+  'Golden Tricorn': { axes: {}, pve: 2, pvp: 1, role: 'addclear', build: true, note: 'big stack when you mix ability and weapon kills' },
   Hatchling: { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'addclear', element: 'strand', note: 'precision or final blows spawn Threadlings that chase enemies' },
 
   // --- PvE survivability (role: survival) ---
@@ -49,8 +49,8 @@ export const PERKS_REC = {
   // --- PvE economy / uptime (role: economy — never a PvE "avoid") ---
   Reconstruction: { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'economy', note: 'auto-refills an oversized mag — sets up a full DPS dump without reloading' },
   'Envious Assassin': { axes: {}, pve: 3, pvp: 0, role: 'economy', note: 'overflows the mag off kills before you swap to a boss' },
-  Demolitionist: { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'economy', note: 'kills feed your grenade — ability-loop fuel' },
-  Pugilist: { axes: { engine: 2, range: 1 }, pve: 2, pvp: 1, role: 'economy', note: 'kills charge your melee — fuel for punch-build loops' },
+  Demolitionist: { axes: { engine: 2 }, pve: 2, pvp: 1, role: 'economy', build: true, note: 'kills feed your grenade — ability-loop fuel' },
+  Pugilist: { axes: { engine: 2, range: 1 }, pve: 2, pvp: 1, role: 'economy', build: true, note: 'kills charge your melee — fuel for punch-build loops' },
   Overflow: { axes: {}, pve: 2, pvp: 1, role: 'economy', note: 'double mag off a brick — burst before reloading (needs ammo pickups)' },
   'Rewind Rounds': { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'refunds the mag based on hits — endless uptime' },
   Subsistence: { axes: {}, pve: 1, pvp: 1, role: 'economy', note: 'kills top up the mag from reserves' },
@@ -94,6 +94,7 @@ export const PERKS_REC = {
   'Chill Clip': { axes: {}, pve: 2, pvp: 2, role: 'survival', element: 'stasis', note: 'shots apply Slow and can Freeze — Stasis crowd-control and a safety/uptime staple' },
   'Crystalline Corpsebloom': { axes: {}, pve: 2, pvp: 0, role: 'addclear', element: 'stasis', note: 'Stasis final blows spawn crystals for shatter damage and Frost' },
   'Supercharged Magazine': { axes: { engine: 1 }, pve: 2, pvp: 0, role: 'economy', element: 'arc', note: 'while Amplified, ammo reloads from reserves — Arc-build uptime' },
+  'Trickle Charge': { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'economy', element: 'arc', note: 'sprinting or dealing damage builds Bolt Charge — Arc-build fuel' },
   'Shoot to Loot': { axes: { range: -1 }, pve: 2, pvp: 0, role: 'economy', note: 'shoot ammo bricks to grab them at range — feeds you and the team' },
   'Lead from Gold': { axes: {}, pve: 1, pvp: 0, role: 'economy', note: 'heavy-ammo bricks reload this weapon from reserves' },
   'Grave Robber': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'economy', note: 'melee kills reload the mag — fuel for close, punchy play' },
