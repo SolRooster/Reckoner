@@ -10,42 +10,13 @@ export const AXES = {
   soul: { a: 'Showtime', b: 'Bedrock', desc: 'what you optimize for' },
 };
 
-export const SHARED_AXES = ['engine', 'cadence', 'soul'];
-export const MODE_AXES = ['tempo', 'range'];
+export const SHARED_AXES = ['cadence', 'soul'];
+export const MODE_AXES = ['tempo', 'range', 'engine'];
 
 // section: 'shared' | 'pve' | 'pvp'. Shared questions touch identity axes;
 // pve/pvp questions touch tempo/range and route into that mode's profile.
 export const QUESTIONS = [
   // ---- Identity (shared) ----
-  {
-    section: 'shared',
-    q: 'What actually makes you feel powerful?',
-    options: [
-      { text: 'Almost always an ability loop — grenade, melee, buffs', axis: { engine: 2 } },
-      { text: 'Usually synergy, but I appreciate good gunfeel', axis: { engine: 1 } },
-      { text: 'Usually the gun, but I dabble in builds', axis: { engine: -1 } },
-      { text: 'A gun that just feels perfect in my hands', axis: { engine: -2 } },
-    ],
-  },
-  {
-    section: 'shared',
-    q: 'When a game has deep build-crafting, you:',
-    options: [
-      { text: 'Theorycraft synergy — perks that feed each other', axis: { engine: 2 } },
-      { text: 'Chase raw gunfeel and fundamentals', axis: { engine: -2 } },
-      { text: 'Whatever makes my fireteam stronger', axis: { engine: 1 } },
-    ],
-  },
-  {
-    section: 'shared',
-    q: 'Tuning a weapon, you prioritize:',
-    options: [
-      { text: 'Kill / ability-trigger perks every time (synergy)', axis: { engine: 2 } },
-      { text: 'Lean synergy, with an eye on feel', axis: { engine: 1 } },
-      { text: 'Lean feel, with a little synergy', axis: { engine: -1 } },
-      { text: 'Raw handling, reload and stability — pure feel', axis: { engine: -2 } },
-    ],
-  },
   {
     section: 'shared',
     q: 'Your damage rhythm:',
@@ -78,6 +49,26 @@ export const QUESTIONS = [
   },
 
   // ---- PvE ----
+  {
+    section: 'pve',
+    q: 'In PvE, what makes you feel powerful?',
+    options: [
+      { text: 'An ability loop that never stops — grenade, melee, buffs', axis: { engine: 2 } },
+      { text: 'Mostly synergy, backed by solid gunplay', axis: { engine: 1 } },
+      { text: 'Mostly the gun, with a little build', axis: { engine: -1 } },
+      { text: 'A weapon that just feels perfect', axis: { engine: -2 } },
+    ],
+  },
+  {
+    section: 'pve',
+    q: 'Your ideal PvE weapon perk:',
+    options: [
+      { text: 'Feeds my build/loop (Voltshot, Demolitionist, Destabilizing)', axis: { engine: 2 } },
+      { text: 'Leans build, but I value reliability', axis: { engine: 1 } },
+      { text: 'Leans raw stats, with a little synergy', axis: { engine: -1 } },
+      { text: 'Pure handling, reload and damage — no build needed', axis: { engine: -2 } },
+    ],
+  },
   {
     section: 'pve',
     q: 'In a GM Nightfall, your role is:',
@@ -142,6 +133,26 @@ export const QUESTIONS = [
   },
 
   // ---- PvP ----
+  {
+    section: 'pvp',
+    q: 'In PvP, what wins your fights?',
+    options: [
+      { text: 'My build — abilities, class synergy, debuffs', axis: { engine: 2 } },
+      { text: 'Mostly build, backed by my aim', axis: { engine: 1 } },
+      { text: 'Mostly aim, with a little build', axis: { engine: -1 } },
+      { text: 'Pure gunskill — the weapon has to feel perfect', axis: { engine: -2 } },
+    ],
+  },
+  {
+    section: 'pvp',
+    q: 'Your ideal PvP weapon perk:',
+    options: [
+      { text: 'Build and ability synergy', axis: { engine: 2 } },
+      { text: 'A bit of synergy, mostly feel', axis: { engine: 1 } },
+      { text: 'Mostly feel, the odd bit of synergy', axis: { engine: -1 } },
+      { text: 'Pure gunfeel — reload, handling, range', axis: { engine: -2 } },
+    ],
+  },
   {
     section: 'pvp',
     q: 'Your Crucible instinct when you spot someone:',
