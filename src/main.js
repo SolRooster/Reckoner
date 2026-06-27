@@ -84,6 +84,7 @@ function renderProgress(message) {
 const WEAPON_PERKS_CATEGORY = 4241085061; // "WEAPON PERKS" socket category
 const TIER_LEGENDARY = 5;
 const WEAPON_ITEM_TYPE = 3;
+const ELEMENT_NAME = { 1: 'Kinetic', 2: 'Arc', 3: 'Solar', 4: 'Void', 6: 'Stasis', 7: 'Strand' };
 
 async function scanVault(membershipType, membershipId, weaponData) {
   renderProgress('Waking the Cryptarch\u2026');
@@ -144,6 +145,8 @@ function collectWeapons(profile, items) {
       columns,
       hardware,
       roll,
+      icon: def.icon,
+      element: ELEMENT_NAME[def.damageType] || '',
       locked: ((it.state || 0) & 1) === 1,
     });
   }
@@ -213,7 +216,15 @@ function readPerks(def, socketInfo, reusableInfo, items) {
 function renderVault(weapons, usageMap, doctrine, lockCtx) {
   const byHash = new Map();
   for (const w of weapons) {
-    if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, frame: w.frame, copies: [] });
+    if (!byHash.has(w.hash))
+      byHash.set(w.hash, {
+        name: w.name,
+        type: w.type,
+        frame: w.frame,
+        icon: w.icon,
+        element: w.element,
+        copies: [],
+      });
     byHash.get(w.hash).copies.push({
       instanceId: w.instanceId,
       columns: w.columns,
@@ -234,6 +245,9 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
         name: g.name,
         frame: g.frame,
         type: g.type,
+        icon: g.icon,
+        element: g.element,
+        columns: c.columns || [],
         traits: c.traits || [],
         tier: c.tier,
         verdict: c.verdict,
@@ -257,13 +271,20 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
       n != null ? ` <span class="vfilter-n">${n}</span>` : ''
     }</button>`;
 
+  const distinct = (key) => [...new Set(tiles.map((t) => t[key]).filter(Boolean))].sort();
+  const sel = (id, label, opts) =>
+    `<select id="${id}" class="vselect"><option value="">${label}</option>${opts
+      .map((o) => `<option value="${escapeHtml(o.toLowerCase())}">${escapeHtml(o)}</option>`)
+      .join('')}</select>`;
+
   const lockable = lockCtx && lockCtx.characterId;
   const bulkBar = lockable
     ? `<div class="bulk-bar">
          <button id="lock-keepers" class="btn-secondary">Lock keepers</button>
          <button id="unlock-shards" class="btn-secondary">Unlock shards</button>
          <span id="bulk-status" class="bulk-status"></span>
-       </div>`
+       </div>
+       <p class="subtle bulk-note">Bulk actions only touch what your filters currently show.</p>`
     : `<p class="subtle bulk-note">This sign-in can\u2019t lock items \u2014 enable \u201CMove or equip Destiny items\u201D on your Bungie app, then sign out and back in to prep shards here.</p>`;
 
   app.innerHTML = `
@@ -276,13 +297,16 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
       ${doctrineNote}
       <div class="vault-controls">
         <input id="vault-search" class="vault-search" type="search" placeholder="Filter by gun or perk\u2026" />
-        <div class="vfilters">
-          ${chip('all', 'All', tiles.length)}
-          ${chip('keep', 'Keep', counts.keep || 0)}
-          ${chip('flex', 'Flex', counts.flex || 0)}
-          ${chip('shard', 'Shard', counts.shard || 0)}
-          ${counts.unsure ? chip('unsure', 'Unsure', counts.unsure) : ''}
-        </div>
+        ${sel('f-type', 'Any type', distinct('type'))}
+        ${sel('f-frame', 'Any archetype', distinct('frame'))}
+        ${sel('f-element', 'Any element', distinct('element'))}
+      </div>
+      <div class="vfilters">
+        ${chip('all', 'All', tiles.length)}
+        ${chip('keep', 'Keep', counts.keep || 0)}
+        ${chip('flex', 'Flex', counts.flex || 0)}
+        ${chip('shard', 'Shard', counts.shard || 0)}
+        ${counts.unsure ? chip('unsure', 'Unsure', counts.unsure) : ''}
       </div>
       ${bulkBar}
       <div class="tile-grid" id="tile-grid">
@@ -295,16 +319,28 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
   // ---- filtering ----
   const grid = document.querySelector('#tile-grid');
   const search = document.querySelector('#vault-search');
+  const selType = document.querySelector('#f-type');
+  const selFrame = document.querySelector('#f-frame');
+  const selElement = document.querySelector('#f-element');
   let activeTier = 'all';
   const applyFilter = () => {
     const q = search.value.trim().toLowerCase();
-    grid.querySelectorAll('.tile').forEach((el) => {
-      const okTier = activeTier === 'all' || el.dataset.tier === activeTier;
-      const okText = !q || el.dataset.name.includes(q) || el.dataset.perks.includes(q);
-      el.classList.toggle('hidden', !(okTier && okText));
+    const ty = selType.value;
+    const fr = selFrame.value;
+    const el = selElement.value;
+    grid.querySelectorAll('.tile').forEach((node) => {
+      const d = node.dataset;
+      const ok =
+        (activeTier === 'all' || d.tier === activeTier) &&
+        (!q || d.name.includes(q) || d.perks.includes(q)) &&
+        (!ty || d.type === ty) &&
+        (!fr || d.frame === fr) &&
+        (!el || d.element === el);
+      node.classList.toggle('hidden', !ok);
     });
   };
   search.addEventListener('input', applyFilter);
+  [selType, selFrame, selElement].forEach((s) => s.addEventListener('change', applyFilter));
   document.querySelectorAll('.vfilter').forEach((b) =>
     b.addEventListener('click', () => {
       document.querySelectorAll('.vfilter').forEach((x) => x.classList.remove('active'));
@@ -346,11 +382,17 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
     })
   );
 
-  const runBulk = async (targets, state, verb) => {
+  // Bulk acts ONLY on the tiles the current filters are showing.
+  const visibleTiles = () =>
+    [...grid.querySelectorAll('.tile:not(.hidden)')]
+      .map((node) => tileById.get(node.dataset.id))
+      .filter(Boolean);
+
+  const runBulk = async (tierTest, state, verb) => {
     const el = statusEl();
-    const work = targets.filter((t) => t.locked !== state);
+    const work = visibleTiles().filter((t) => tierTest(t) && t.locked !== state);
     if (!work.length) {
-      el.textContent = `Nothing to ${verb}.`;
+      el.textContent = `Nothing to ${verb} in this view.`;
       return;
     }
     let done = 0;
@@ -375,10 +417,10 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
   };
   document
     .querySelector('#lock-keepers')
-    .addEventListener('click', () => runBulk(tiles.filter((t) => t.tier === 'keep' || t.tier === 'flex'), true, 'lock'));
+    .addEventListener('click', () => runBulk((t) => t.tier === 'keep' || t.tier === 'flex', true, 'lock'));
   document
     .querySelector('#unlock-shards')
-    .addEventListener('click', () => runBulk(tiles.filter((t) => t.tier === 'shard'), false, 'unlock'));
+    .addEventListener('click', () => runBulk((t) => t.tier === 'shard', false, 'unlock'));
 }
 
 function lockErr(e) {
@@ -388,17 +430,38 @@ function lockErr(e) {
 }
 
 function vaultTile(t) {
-  const perks = t.traits.length ? t.traits.map(escapeHtml).join(' + ') : '\u2014';
+  const highlight = t.tier === 'keep' || t.tier === 'flex';
+  const recSet = new Set(highlight ? t.traits : []);
+  const cols = (t.columns && t.columns.length ? t.columns : [t.traits]).filter((c) => c && c.length);
+  const perksHtml = cols.length
+    ? cols
+        .map(
+          (col) =>
+            `<div class="perk-col">${col
+              .map((p) => `<span class="perk${recSet.has(p) ? ' rec' : ''}">${escapeHtml(p)}</span>`)
+              .join('')}</div>`
+        )
+        .join('')
+    : '<span class="perk">\u2014</span>';
+  const allPerks = cols.flat().join(' ').toLowerCase();
+  const img = t.icon
+    ? `<img class="tile-img" src="https://www.bungie.net${escapeHtml(t.icon)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />`
+    : '<span class="tile-img tile-img-empty"></span>';
   const lock = t.locked ? '\uD83D\uDD12' : '\uD83D\uDD13';
-  return `<div class="tile ${t.tier}" data-tier="${t.tier}" data-name="${escapeHtml(
+  return `<div class="tile ${t.tier}" data-id="${escapeHtml(t.instanceId)}" data-tier="${t.tier}" data-name="${escapeHtml(
     t.name.toLowerCase()
-  )}" data-perks="${escapeHtml(t.traits.join(' ').toLowerCase())}">
-    <button class="tile-lock" data-id="${escapeHtml(t.instanceId)}" title="${
-    t.locked ? 'Locked' : 'Unlocked'
-  }">${lock}</button>
-    <div class="tile-name">${escapeHtml(t.name)}</div>
-    <div class="tile-meta">${escapeHtml([t.frame, t.type].filter(Boolean).join(' \u00b7 '))}</div>
-    <div class="tile-perks">${perks}</div>
+  )}" data-perks="${escapeHtml(allPerks)}" data-type="${escapeHtml((t.type || '').toLowerCase())}" data-frame="${escapeHtml(
+    (t.frame || '').toLowerCase()
+  )}" data-element="${escapeHtml((t.element || '').toLowerCase())}">
+    <button class="tile-lock" data-id="${escapeHtml(t.instanceId)}" title="${t.locked ? 'Locked' : 'Unlocked'}">${lock}</button>
+    <div class="tile-head">
+      ${img}
+      <div class="tile-headtext">
+        <div class="tile-name">${escapeHtml(t.name)}</div>
+        <div class="tile-meta">${escapeHtml([t.frame, t.type, t.element].filter(Boolean).join(' \u00b7 '))}</div>
+      </div>
+    </div>
+    <div class="tile-perks">${perksHtml}</div>
     ${t.why ? `<div class="tile-why">${escapeHtml(t.why)}</div>` : ''}
     <div class="tile-verdict ${t.tier}">${escapeHtml(t.verdict)}</div>
   </div>`;

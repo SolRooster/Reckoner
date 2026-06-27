@@ -222,6 +222,7 @@ export function gradeGun(group, usageKills, profile) {
     }
     return {
       instanceId: c.instanceId,
+      columns: cols,
       hardware: c.hardware,
       locked: !!c.locked,
       roll: c.roll || [],

@@ -10,7 +10,7 @@ const KEY = 'items';
 const WEAPON_ITEM_TYPE = 3;
 // Bump when slim()'s shape changes, so stale caches (e.g. missing plugCategory)
 // are discarded and the manifest is re-processed.
-const SCHEMA = 2;
+const SCHEMA = 3;
 
 // ---- public API ------------------------------------------------------------
 
@@ -67,6 +67,8 @@ function slim(def) {
     tier: def.inventory?.tierType,
     socketCategories: def.sockets?.socketCategories ?? null,
     plugCategory: def.plug?.plugCategoryIdentifier ?? null,
+    icon: def.displayProperties?.icon ?? null,
+    damageType: def.defaultDamageType ?? 0,
   };
 }
 

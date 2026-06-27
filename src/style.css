@@ -297,12 +297,16 @@ html, body {
 }
 .vfilter.active { color: var(--ink); border-color: var(--amber); }
 .vfilter-n { opacity: 0.7; }
+.vselect {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); color: var(--ink);
+  border-radius: 8px; padding: 7px 10px; font-size: 0.82rem; cursor: pointer;
+}
 
-.bulk-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 14px; }
+.bulk-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
 .bulk-status { color: var(--muted); font-size: 0.82rem; }
 .bulk-note { margin: 0 0 14px; }
 
-.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
 .tile {
   position: relative; border: 1px solid var(--line); border-left: 3px solid var(--line);
   border-radius: 10px; padding: 12px 12px 10px; background: rgba(255, 255, 255, 0.015);
@@ -318,10 +322,19 @@ html, body {
 }
 .tile-lock:hover { opacity: 1; }
 .tile-lock:disabled { opacity: 0.4; cursor: default; }
-.tile-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); padding-right: 22px; }
-.tile-meta { color: var(--muted); font-size: 0.74rem; margin: 2px 0 8px; }
-.tile-perks { color: var(--ink); font-size: 0.88rem; font-weight: 600; }
-.tile-why { color: var(--muted); font-size: 0.76rem; font-style: italic; margin-top: 6px; }
+.tile-head { display: flex; gap: 10px; align-items: center; padding-right: 22px; }
+.tile-img { width: 40px; height: 40px; border-radius: 6px; flex: 0 0 auto; background: rgba(255, 255, 255, 0.04); }
+.tile-img-empty { display: inline-block; }
+.tile-headtext { min-width: 0; }
+.tile-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+.tile-meta { color: var(--muted); font-size: 0.74rem; margin-top: 2px; }
+.tile-perks { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 10px; }
+.perk-col { display: flex; flex-direction: column; gap: 2px; }
+.perk { color: var(--muted); font-size: 0.82rem; }
+.perk.rec { color: var(--ink); font-weight: 700; }
+.tile.keep .perk.rec { color: #67e08c; }
+.tile.flex .perk.rec { color: #6cb8ff; }
+.tile-why { color: var(--muted); font-size: 0.76rem; font-style: italic; margin-top: 8px; }
 .tile-verdict {
   margin-top: 8px; display: inline-block; font-size: 0.7rem; font-weight: 700;
   padding: 3px 9px; border-radius: 999px;
