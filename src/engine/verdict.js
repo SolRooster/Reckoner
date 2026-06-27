@@ -91,6 +91,8 @@ const HARDWARE = {
   'Steady Rounds': { stability: 1 },
   'Enhanced Battery': { magsize: 1 },
   'Ionized Battery': { magsize: 1, range: 0.3 },
+  'Light Battery': { reload: 0.7, range: 0.5 },
+  'Tactical Battery': { magsize: 0.7, stability: 0.5, reload: 0.4 },
 };
 
 function hardwareVec(name) {
@@ -191,6 +193,14 @@ const SYNERGY = [
   ['Envious Assassin', 'Bait and Switch', 2, 'overflow, then swap-burst'],
   ['Reconstruction', 'Bait and Switch', 2, 'auto-fills straight into the burst'],
   ['Jolting Feedback', 'Voltshot', 1.5, 'double Arc jolt sources'],
+  ['Envious Arsenal', 'Bait and Switch', 3, 'auto-reloads from reserves straight into the swap-burst'],
+  ["Fourth Time's the Charm", 'Bait and Switch', 2.5, 'free rounds keep feeding the burst'],
+  ['Attrition Orbs', 'Explosive Light', 2.5, 'your own orbs supercharge the next shots'],
+  ['Repulsor Brace', 'Destabilizing Rounds', 2, 'volatile kills keep your Void overshield topped'],
+  ['Headstone', 'Crystalline Corpsebloom', 1.5, 'stack crystals for big shatter damage'],
+  ['Headstone', 'Chill Clip', 1.5, 'freeze, then crystal, then shatter'],
+  ['Kill Clip', 'Repulsor Brace', 1.5, 'a damage spike while your overshield holds'],
+  ['Incandescent', 'Subsistence', 1.5, 'scorch the room while the mag refills itself'],
 ];
 
 function synergyBetween(a, b) {

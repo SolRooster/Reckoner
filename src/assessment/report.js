@@ -110,6 +110,16 @@ export const PERKS_REC = {
   Rimestealer: { axes: {}, pve: 2, pvp: 1, role: 'survival', element: 'stasis', note: 'breaking a Stasis crystal grants you Frost Armor — pairs with crystal-makers like Headstone or Crystalline Corpsebloom' },
   Slice: { axes: {}, pve: 2, pvp: 1, role: 'survival', element: 'strand', note: 'hits Sever targets so they deal less damage — Strand survivability/debuff' },
   Tear: { axes: {}, pve: 2, pvp: 0, role: 'survival', element: 'strand', note: 'sustained damage Severs targets and creates a Tangle — Strand control' },
+
+  // --- Added from current-sandbox research (Renegades / Monument of Triumph, 2026) ---
+  'Envious Arsenal': { axes: {}, pve: 3, pvp: 0, role: 'economy', note: 'damaging targets with your other weapons auto-loads this from reserves — a near-permanent overflowed mag for DPS swaps (the modern Envious)' },
+  'Attrition Orbs': { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'sustained damage spawns your own Orbs of Power — feeds Explosive Light and your armor charge' },
+  'Explosive Light': { axes: { cadence: 1 }, pve: 2, pvp: 1, role: 'dps', note: 'picking up Orbs supercharges your next few shots — a huge burst on rockets and GLs' },
+  'Magnificent Howl': { axes: { range: -1 }, pve: 1, pvp: 3, role: 'dps', note: 'two fast precision hits massively boost your next shots — a Crucible one-burst maker' },
+  Headstone: { axes: {}, pve: 2, pvp: 1, role: 'addclear', element: 'stasis', note: 'precision kills spawn a Stasis crystal — shatter fuel and the backbone of Stasis weapon builds' },
+  "Fourth Time's the Charm": { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'rapid precision hits refund two rounds to the mag — endless uptime for a damage perk' },
+  'Cascade Point': { axes: { cadence: 1 }, pve: 2, pvp: 0, role: 'dps', note: 'an ability kill makes your next seconds fire far faster — a burst-DPS swap perk on fusions, LFRs and swords' },
+  'Precision Frame': { axes: {}, pve: 1, pvp: 1, role: 'utility', note: 'consistent, low-recoil delivery — a reliable base for any roll' },
 };
 
 // How to describe the player's own tendency on each axis pole.
