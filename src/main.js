@@ -128,9 +128,9 @@ function collectWeapons(profile, items) {
     if (!def || def.itemType !== WEAPON_ITEM_TYPE || def.tier !== TIER_LEGENDARY) continue;
     const socketInfo = socketData[it.itemInstanceId];
     const reusableInfo = reusableData[it.itemInstanceId];
-    const { columns, extras } = readPerks(def, socketInfo, reusableInfo, items);
+    const { columns, hardware } = readPerks(def, socketInfo, reusableInfo, items);
     const frame = readFrame(def, socketInfo, items);
-    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, frame, columns, extras });
+    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, frame, columns, hardware });
   }
   return weapons;
 }
@@ -147,9 +147,13 @@ function readFrame(def, socketInfo, items) {
   return (plugHash && items[plugHash]?.name) || '';
 }
 
-// Reads each trait column as the FULL set of available perks (not just the
-// socketed one). For normal random rolls a column has its single rolled perk;
-// for Tier 5 / enhanceable weapons it lists every selectable perk.
+// Plug categories that are tunable hardware (barrel / mag / battery / etc.).
+// Origin traits, mods, masterworks and ornaments are deliberately excluded.
+const HARDWARE_CATS = ['barrels', 'magazines', 'batteries', 'blades', 'scopes', 'bowstrings', 'arrows', 'grips', 'tubes', 'hafts', 'guards', 'stocks', 'launcher'];
+
+// Reads each weapon socket as the FULL set of available plugs (not just the
+// socketed one). Trait columns drive the verdict; hardware columns are read so
+// the engine can judge barrel/mag fit silently against the Doctrine.
 function readPerks(def, socketInfo, reusableInfo, items) {
   const cat = (def.socketCategories ?? []).find(
     (c) => c.socketCategoryHash === WEAPON_PERKS_CATEGORY
@@ -158,35 +162,44 @@ function readPerks(def, socketInfo, reusableInfo, items) {
   const sockets = socketInfo?.sockets ?? [];
   const reusable = reusableInfo?.plugs ?? {};
   const columns = [];
-  const extras = [];
+  const hardware = [];
+
+  // Every available plug name in a socket (the full roll pool). Falls back to
+  // the socketed plug for fixed random rolls.
+  const optionsAt = (idx, socketedHash, socketedName) => {
+    let hashes = (reusable[idx] || []).map((p) => p.plugItemHash).filter(Boolean);
+    if (!hashes.length && socketedHash) hashes = [socketedHash];
+    let names = hashes.map((h) => items[h]?.name).filter(Boolean);
+    if (socketedName) {
+      names = names.filter((n) => n !== socketedName);
+      names.unshift(socketedName);
+    }
+    return [...new Set(names)];
+  };
+
   for (const idx of indexes) {
     const socketedHash = sockets[idx]?.plugHash;
     const socketedDef = socketedHash ? items[socketedHash] : null;
     const pc = socketedDef?.plugCategory || '';
     if (pc.includes('trackers')) continue; // skip Kill Tracker noise
-    if (pc !== 'frames') {
-      if (socketedDef?.name) extras.push(socketedDef.name); // barrel / mag / origin
+    if (pc === 'frames') {
+      const names = optionsAt(idx, socketedHash, socketedDef?.name);
+      if (names.length) columns.push(names); // the two random trait columns
       continue;
     }
-    // The two random trait columns: gather every available perk.
-    let hashes = (reusable[idx] || []).map((p) => p.plugItemHash).filter(Boolean);
-    if (!hashes.length && socketedHash) hashes = [socketedHash];
-    let names = hashes.map((h) => items[h]?.name).filter(Boolean);
-    if (socketedDef?.name) {
-      names = names.filter((n) => n !== socketedDef.name);
-      names.unshift(socketedDef.name); // keep the active perk first
+    if (HARDWARE_CATS.some((h) => pc.includes(h))) {
+      const names = optionsAt(idx, socketedHash, socketedDef?.name);
+      if (names.length) hardware.push(names);
     }
-    names = [...new Set(names)];
-    if (names.length) columns.push(names);
   }
-  return { columns, extras };
+  return { columns, hardware };
 }
 
 function renderVault(weapons, usageMap, doctrine) {
   const byHash = new Map();
   for (const w of weapons) {
     if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, frame: w.frame, copies: [] });
-    byHash.get(w.hash).copies.push({ columns: w.columns, extras: w.extras });
+    byHash.get(w.hash).copies.push({ columns: w.columns, hardware: w.hardware });
   }
   const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
   const graded = groups.map((g) => ({ group: g, ...gradeGun(g, usageMap.get(g.name), doctrine) }));
@@ -227,10 +240,11 @@ function vaultCard({ group, rolls, blurb, frameNote }) {
     .map((r) => {
       const cls = r.keep ? 'keep' : r.flex ? 'flex' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
       const tip = escapeHtml(r.traits.map(perkTip).join(' \u2014 '));
+      const why = (r.keep || r.flex) && r.why ? `<span class="roll-why">${escapeHtml(r.why)}</span>` : '';
       return `<li>
         <span class="roll-count" title="copies that can roll this">&times;${r.count}</span>
         <span class="roll-traits" title="${tip}">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
-        <span class="roll-extras">${r.extras.map(escapeHtml).join(' &middot; ')}</span>
+        ${why}
         <span class="roll-verdict ${cls}">${escapeHtml(r.verdict)}</span>
       </li>`;
     })

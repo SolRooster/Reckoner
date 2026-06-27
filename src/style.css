@@ -256,14 +256,14 @@ html, body {
   grid-template-columns: 2.6ch 1fr auto;
   grid-template-areas:
     "count traits verdict"
-    "count extras verdict";
+    "count why verdict";
   column-gap: 10px;
   row-gap: 2px;
   align-items: baseline;
 }
 .roll-count { grid-area: count; color: var(--amber); font-weight: 700; font-size: 0.82rem; }
 .roll-traits { grid-area: traits; color: var(--ink); font-weight: 600; font-size: 0.95rem; }
-.roll-extras { grid-area: extras; color: var(--muted); font-size: 0.78rem; }
+.roll-why { grid-area: why; color: var(--muted); font-size: 0.8rem; font-style: italic; }
 .roll-verdict {
   grid-area: verdict; align-self: center;
   font-size: 0.72rem; font-weight: 700; padding: 3px 9px;

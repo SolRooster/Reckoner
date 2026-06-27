@@ -51,6 +51,130 @@ function isBuild(p) {
   return !!(p.element || p.build);
 }
 
+// ---- Holistic hardware (barrel / mag) reading -----------------------------
+// Alex never wants to think about barrels or mags. The engine reads them,
+// scores them against the Doctrine, and only ever speaks up to confirm a gun's
+// hardware already suits his hand. Each hardware perk maps to the stats it
+// moves; the Doctrine decides which of those stats matter.
+const HARDWARE = {
+  Smallbore: { range: 1, stability: 1 },
+  'Full Bore': { range: 1.5, stability: -0.5, handling: -0.5 },
+  'Hammer-Forged Rifling': { range: 1 },
+  'Extended Barrel': { range: 1, stability: 0.5, handling: -0.5 },
+  'Fluted Barrel': { handling: 1, stability: 0.5 },
+  'Arrowhead Brake': { recoil: 1, handling: 0.5 },
+  'Chambered Compensator': { stability: 1, recoil: 0.7, handling: -0.5 },
+  'Polygonal Rifling': { stability: 1 },
+  'Corkscrew Rifling': { range: 0.5, stability: 0.5, handling: 0.5 },
+  'Full Choke': { stability: 0.8 },
+  'Rifled Barrel': { range: 1 },
+  'Smooth Bore': { handling: 0.4 },
+  'Short Barrel': { handling: 1, range: -0.5 },
+  'Quick Launch': { handling: 1 },
+  'Linear Compensator': { stability: 0.7, range: 0.3 },
+  'Volatile Launch': { range: 1, stability: -0.3 },
+  'Hard Launch': { range: 0.7, handling: -0.3 },
+  'Projection Fuse': { range: 1 },
+  'Particle Repeater': { stability: 1 },
+  'Liquid Coils': { range: 0.5, recoil: 0.2 },
+  'Accelerated Coils': { handling: 0.5 },
+  'Flared Magwell': { reload: 1, stability: 0.3 },
+  'Alloy Magazine': { reload: 1 },
+  'Light Mag': { reload: 0.7, range: 0.5 },
+  'Appended Mag': { magsize: 1 },
+  'Extended Mag': { magsize: 1.5, reload: -0.5, handling: -0.3 },
+  'Tactical Mag': { magsize: 0.7, stability: 0.5, reload: 0.4 },
+  'High-Caliber Rounds': { range: 0.5 },
+  'Ricochet Rounds': { range: 0.5, stability: 0.7 },
+  'Accurized Rounds': { range: 1 },
+  'Armor-Piercing Rounds': { range: 0.5 },
+  'Steady Rounds': { stability: 1 },
+  'Enhanced Battery': { magsize: 1 },
+  'Ionized Battery': { magsize: 1, range: 0.3 },
+};
+
+function hardwareVec(name) {
+  if (HARDWARE[name]) return HARDWARE[name];
+  for (const key of Object.keys(HARDWARE)) {
+    if (name.startsWith(key)) return HARDWARE[key];
+  }
+  return null;
+}
+
+// Doctrine -> which hardware stats matter, and how much.
+function hardwarePrefs(dir) {
+  const w = { range: 0, stability: 0.6, handling: 0, reload: 0.5, magsize: 0, recoil: 0.4 };
+  if (!dir) return w;
+  if (dir.range < 0) { w.range += 0.9; w.stability += 0.3; }          // Sightline
+  else if (dir.range > 0) { w.handling += 0.8; w.stability += 0.2; }   // Knife-fighter
+  if (dir.tempo > 0) { w.handling += 0.5; w.reload += 0.3; }           // Slayer
+  else if (dir.tempo < 0) { w.stability += 0.4; w.range += 0.3; }      // Anchor
+  if (dir.cadence > 0) { w.reload += 0.6; }                            // Burst
+  else if (dir.cadence < 0) { w.magsize += 0.5; w.stability += 0.2; }  // Sustain
+  return w;
+}
+
+function hardwareScore(names, prefs) {
+  let total = 0;
+  let n = 0;
+  for (const name of names) {
+    const vec = hardwareVec(name);
+    if (!vec) continue;
+    let s = 0;
+    for (const [a, v] of Object.entries(vec)) s += v * (prefs[a] || 0);
+    total += s;
+    n += 1;
+  }
+  if (!n) return 0.5; // unknown hardware = neutral; never penalize the unknown
+  return Math.max(0, Math.min(1, (total / n + 0.4) / 1.4));
+}
+
+const STAT_WORD = { range: 'range', stability: 'stability', handling: 'handling', reload: 'reload', magsize: 'mag size', recoil: 'recoil control' };
+
+function prefPhrase(prefs) {
+  return Object.entries(prefs)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([k]) => STAT_WORD[k])
+    .join(' and ');
+}
+
+// One quiet, doctrine-aware confirmation — only when the hardware actually fits.
+// Stays silent otherwise, so Alex never has to think about barrels or mags.
+function gunHardwareLine(group, rolls, dir) {
+  const keeper = rolls.find((r) => r.keep);
+  if (!keeper) return '';
+  const mode = (keeper.keepModes?.[0] || 'PvE').toLowerCase();
+  const prefs = hardwarePrefs(dir[mode]);
+  let best = 0;
+  for (const c of group.copies) {
+    best = Math.max(best, hardwareScore((c.hardware || []).flat(), prefs));
+  }
+  if (best >= 0.62) return `Its ${prefPhrase(prefs)} tuning already suits your hand \u2014 nothing to fuss over.`;
+  return '';
+}
+
+const FOCUS_WORD = { addclear: 'add-clear', dps: 'boss-DPS', survival: 'survival' };
+
+// Why this roll earns its keep, in how-you-play terms (not just what it does).
+function rollWhy(roll, dir, focus) {
+  const mode = (roll.keepModes?.[0] || 'PvE').toLowerCase();
+  const d = dir[mode] || dir.pve;
+  const recd = roll.traits.map((t) => PERKS_REC[t]).filter(Boolean);
+  const builds = recd.filter(isBuild);
+  const standalone = recd.filter((p) => !isBuild(p));
+  const clauses = [];
+  if (d && d.engine > 0 && builds.length) clauses.push('feeds the build loop you live in');
+  else if (d && d.engine < 0 && standalone.length && !builds.length) clauses.push('pure gunfeel \u2014 no build to babysit');
+  if (mode === 'pve' && focus && recd.some((p) => p.role === focus)) {
+    clauses.push(`serves your ${FOCUS_WORD[focus]} focus`);
+  }
+  if (roll.flex && roll.flexElement) clauses.push(`held for ${ELEMENT_LABEL[roll.flexElement]} builds`);
+  if (clauses.length) return clauses.join('; ');
+  const star = recd.slice().sort((a, b) => (b[mode] || 0) - (a[mode] || 0))[0];
+  return star?.note || '';
+}
+
 function rollModeScore(traits, mode, dir, focus) {
   // Build-oriented (Architect) players value loop/build perks; gunfeel players
   // (Gunslinger) want standalone perks. The Engine axis decides.
@@ -141,12 +265,17 @@ export function gradeGun(group, usageKills, profile) {
     r.verdict = `Flex (${ELEMENT_LABEL[element]})`;
   }
 
+  for (const r of rolls) {
+    if (r.keep || r.flex) r.why = rollWhy(r, dir, focus);
+  }
+  const hwLine = gunHardwareLine(group, rolls, dir);
+
   const rank = (r) => (r.keep ? 2 : r.flex ? 1 : 0);
   rolls.sort((a, b) => rank(b) - rank(a) || b.count - a.count);
   return {
     rolls,
     frameNote: frameInfo?.note || '',
-    blurb: composeBlurb(group, rolls, profile, focus),
+    blurb: composeBlurb(group, rolls, profile, focus, hwLine),
   };
 }
 
@@ -177,7 +306,7 @@ function dedupeRolls(copies) {
     const seen = new Set();
     for (const traits of cartesian(cols)) {
       const key = traits.join(' + ') || '\u2014';
-      if (!map.has(key)) map.set(key, { traits, extras: c.extras, count: 0 });
+      if (!map.has(key)) map.set(key, { traits, hardware: c.hardware, count: 0 });
       if (!seen.has(key)) {
         map.get(key).count += 1;
         seen.add(key);
@@ -187,7 +316,7 @@ function dedupeRolls(copies) {
   return [...map.values()];
 }
 
-function composeBlurb(group, rolls, profile, focus) {
+function composeBlurb(group, rolls, profile, focus, hwLine) {
   const total = group.copies.length;
   const keepers = rolls.filter((r) => r.keep);
   const flexes = rolls.filter((r) => r.flex);
@@ -219,6 +348,7 @@ function composeBlurb(group, rolls, profile, focus) {
       .join('; ');
     parts.push(`Flex: ${f}.`);
   }
+  if (hwLine) parts.push(hwLine);
   return parts.join(' ');
 }
 
