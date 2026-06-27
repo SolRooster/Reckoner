@@ -218,6 +218,10 @@ const SYNERGY = [
   ['Incandescent', 'Subsistence', 1.5, 'scorch the room while the mag refills itself'],
   ['Dimensional Shift', 'Repulsor Brace', 2, 'Void Breaches keep your overshield loop alive'],
   ['Dimensional Shift', 'Destabilizing Rounds', 2, 'volatile kills make the Breaches you spend'],
+  ['Dimensional Shift', 'Collective Action', 2, 'both feast on the Void Breaches you make'],
+  ['Killing Wind', 'Quickdraw', 1.5, 'speed and snap-aim chain into aggressive duels'],
+  ['Pugilist', 'One-Two Punch', 2, 'punch, shoot, punch — a self-feeding melee loop'],
+  ['Pugilist', 'Surrounded', 1.5, 'brawl in the thick of it'],
 ];
 
 function synergyBetween(a, b) {
@@ -274,11 +278,22 @@ function rankColumns(cols, mode, dir, focus) {
     const partners = cols.filter((_, j) => j !== i).flat();
     const ranked = col.map((name) => {
       const { score, reasons, recognized } = perkPersonalScore(name, mode, dir, focus, partners);
-      return { name, score, tier: recognized ? perkTier(score) : '', why: reasons.join(' \u00b7 ') };
+      return {
+        name,
+        score,
+        // Recognized perks ALWAYS get a letter (D floor), even when they fight
+        // the doctrine. Unknown perks get '?' — an honest "not in my book yet".
+        tier: recognized ? perkTier(score) || 'D' : '?',
+        why: recognized ? reasons.join(' \u00b7 ') : 'not in my book yet \u2014 grade pending',
+      };
     });
     ranked.sort((a, b) => b.score - a.score);
     return ranked;
   });
+}
+
+function rollSig(traits) {
+  return (traits || []).slice().sort().join('|');
 }
 
 // Whole-roll personal score = sum of its perks' personal scores (synergy between
@@ -397,18 +412,19 @@ export function gradeGun(group, usageKills, profile) {
 
   // Flex: hold the single best non-keeper copy per element, ranked by the same
   // personal score — so the strongest build roll actually wins the slot. Skip
-  // any element a keeper already covers (no point flexing a second Void copy
-  // when your Void keeper is the same build).
-  const keeperElements = new Set();
+  // only copies whose roll DUPLICATES a keeper's roll; a genuinely different
+  // build of the same element (e.g. a second, distinct Void roll) still flexes.
+  const keeperRolls = new Set();
   for (const mode of MODES) {
     const k = best[mode];
-    if (k && k[mode]?.element) keeperElements.add(k[mode].element);
+    if (k) keeperRolls.add(rollSig(k[mode]?.traits || k.roll));
   }
   const flexByElement = {};
   for (const c of copies) {
     if (c.keep) continue;
     const el = c.pve?.element || c.pvp?.element;
-    if (!el || keeperElements.has(el)) continue;
+    if (!el) continue;
+    if (keeperRolls.has(rollSig(c.traits))) continue;
     const sc = Math.max(c.pve?.score || 0, c.pvp?.score || 0);
     if (sc < FLEX_FLOOR) continue;
     const cur = flexByElement[el];

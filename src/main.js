@@ -471,7 +471,8 @@ function vaultTile(t) {
 
 function perkChip(pk, recSet) {
   const rec = recSet.has(pk.name) ? ' rec' : '';
-  const tier = pk.tier ? `<span class="perk-tier t${pk.tier}">${pk.tier}</span>` : '';
+  const cls = pk.tier === '?' ? 'tUnknown' : `t${pk.tier}`;
+  const tier = pk.tier ? `<span class="perk-tier ${cls}">${escapeHtml(pk.tier)}</span>` : '';
   const title = pk.why ? ` title="${escapeHtml(pk.why)}"` : '';
   return `<span class="perk${rec}"${title}>${escapeHtml(pk.name)}${tier}</span>`;
 }

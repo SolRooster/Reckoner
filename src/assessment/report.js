@@ -123,6 +123,8 @@ export const PERKS_REC = {
   'Collective Action': { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'dps', build: true, note: 'weapon damage spikes while you hold an Armor Charge — rewards an ability/charge build, dead weight without one' },
   'Dimensional Shift': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'dps', element: 'void', note: 'spend a Void Breach to spike damage — core fuel for a Void breach build (pairs with Repulsor Brace and Destabilizing)' },
   Quickdraw: { axes: { tempo: 1, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'near-instant ready and aim — for aggressive, close-quarters PvP swaps' },
+  'Threat Remover': { axes: { range: 1 }, pve: 1, pvp: 2, role: 'utility', note: 'landing nearly all pellets in the spread boosts reload, handling and stability — close-range consistency for Spreadshot frames' },
+  'One-Two Punch': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'utility', build: true, note: 'landing the full spread supercharges your next melee — the heart of a punch-shoot melee loop' },
 };
 
 // How to describe the player's own tendency on each axis pole.
