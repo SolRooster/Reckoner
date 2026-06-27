@@ -254,6 +254,28 @@ function rankColumns(cols, mode, dir, focus) {
   });
 }
 
+// Whole-roll personal score = sum of its perks' personal scores (synergy between
+// the two is counted via partners). This is the SAME scorer the tier tags use,
+// so the Keep/Flex/Shard verdict always agrees with the S/A/B tags on screen.
+function rollPersonal(traits, mode, dir, focus) {
+  let score = 0;
+  let recognized = 0;
+  let element = null;
+  let elementScore = -Infinity;
+  for (let i = 0; i < traits.length; i++) {
+    const partners = traits.filter((_, j) => j !== i);
+    const r = perkPersonalScore(traits[i], mode, dir, focus, partners);
+    score += r.score;
+    if (r.recognized) recognized += 1;
+    const p = PERKS_REC[traits[i]];
+    if (p?.element && r.score > elementScore) {
+      elementScore = r.score;
+      element = p.element;
+    }
+  }
+  return { traits, score, recognized, element };
+}
+
 function rollModeScore(traits, mode, dir, focus) {
   // Build-oriented (Architect) players value loop/build perks; gunfeel players
   // (Gunslinger) want standalone perks. The Engine axis decides.
@@ -287,6 +309,9 @@ export function gradeGun(group, usageKills, profile) {
   const focus = topFocus(profile);
   const dir = { pve: dirOf(profile, 'pve'), pvp: dirOf(profile, 'pvp') };
 
+  const KEEP_FLOOR = 8;
+  const FLEX_FLOOR = 8;
+
   const copies = group.copies.map((c) => {
     const cols = c.columns && c.columns.length ? c.columns : [c.roll || []];
     const combos = cartesian(cols);
@@ -294,8 +319,8 @@ export function gradeGun(group, usageKills, profile) {
     for (const mode of MODES) {
       let b = null;
       for (const traits of combos) {
-        const s = rollModeScore(traits, mode, dir[mode], mode === 'pve' ? focus : null);
-        if (!b || s.score > b.score) b = { ...s, traits };
+        const r = rollPersonal(traits, mode, dir[mode], mode === 'pve' ? focus : null);
+        if (!b || r.score > b.score) b = r;
       }
       perMode[mode] = b;
     }
@@ -311,14 +336,16 @@ export function gradeGun(group, usageKills, profile) {
     };
   });
 
-  // Best copy per mode = Keep. Skip modes this frame can't play.
+  // Best copy per mode = Keep, scored by the SAME personal score as the perk
+  // tiers — so an S+S roll never reads "Shard" unless a better copy outranks it.
   const best = {};
   for (const mode of MODES) {
     if (frameInfo && frameInfo[mode] === false) continue;
     let b = null;
     for (const c of copies) {
-      if ((c[mode]?.keepValue || 0) < 2) continue;
-      if (!b || c[mode].score > b[mode].score) b = c;
+      const sc = c[mode]?.score || 0;
+      if (sc < KEEP_FLOOR) continue;
+      if (!b || sc > (b[mode].score || 0)) b = c;
     }
     if (b) best[mode] = b;
   }
@@ -332,28 +359,25 @@ export function gradeGun(group, usageKills, profile) {
       c.tier = 'keep';
       c.keepModes = keepFor;
       c.verdict = `Keep (${keepFor.join(' + ')})`;
-      c.traits = (best.pve === c ? c.pve?.traits : c.pvp?.traits) || c.roll;
+      c.displayMode = best.pve === c ? 'pve' : 'pvp';
+      c.traits = c[c.displayMode]?.traits || c.roll;
     } else {
-      const showMode = (c.pve?.score || 0) >= (c.pvp?.score || 0) ? 'pve' : 'pvp';
-      c.traits = c[showMode]?.traits || c.roll;
-      if (c.recognized < c.traits.length) {
-        c.tier = 'unsure';
-        c.verdict = 'Unsure \u2014 your call';
-      } else {
-        c.tier = 'shard';
-        c.verdict = 'Shard';
-      }
+      c.displayMode = (c.pve?.score || 0) >= (c.pvp?.score || 0) ? 'pve' : 'pvp';
+      c.traits = c[c.displayMode]?.traits || c.roll;
     }
   }
 
-  // Flex: hold the best non-keeper copy per synergy element (one per build flavor).
+  // Flex: hold the single best non-keeper copy per element, ranked by the same
+  // personal score — so the strongest build roll actually wins the slot.
   const flexByElement = {};
   for (const c of copies) {
     if (c.keep) continue;
-    const syn = rollSynergyElement({ traits: c.traits });
-    if (!syn) continue;
-    const cur = flexByElement[syn.element];
-    if (!cur || syn.strength > cur.strength) flexByElement[syn.element] = { copy: c, strength: syn.strength };
+    const el = c.pve?.element || c.pvp?.element;
+    if (!el) continue;
+    const sc = Math.max(c.pve?.score || 0, c.pvp?.score || 0);
+    if (sc < FLEX_FLOOR) continue;
+    const cur = flexByElement[el];
+    if (!cur || sc > cur.score) flexByElement[el] = { copy: c, score: sc };
   }
   for (const element of Object.keys(flexByElement)) {
     const c = flexByElement[element].copy;
@@ -363,15 +387,28 @@ export function gradeGun(group, usageKills, profile) {
     c.verdict = `Flex (${ELEMENT_LABEL[element]})`;
   }
 
+  // Everything else shards — but say WHY. A strong roll that lost to a better
+  // copy reads differently from one that just doesn't fit how you play.
+  for (const c of copies) {
+    if (c.keep || c.flex) continue;
+    const sc = Math.max(c.pve?.score || 0, c.pvp?.score || 0);
+    if (c.recognized < (c.traits?.length || 0)) {
+      c.tier = 'unsure';
+      c.verdict = 'Unsure \u2014 your call';
+    } else if (sc >= FLEX_FLOOR) {
+      c.tier = 'shard';
+      c.verdict = 'Shard \u2014 better copy kept';
+    } else {
+      c.tier = 'shard';
+      c.verdict = 'Shard';
+    }
+  }
+
   for (const c of copies) {
     if (c.keep || c.flex) c.why = rollWhy(c, dir, focus);
   }
   for (const c of copies) {
-    const m = c.keep
-      ? c.keepModes[0].toLowerCase()
-      : (c.pve?.score || 0) >= (c.pvp?.score || 0)
-      ? 'pve'
-      : 'pvp';
+    const m = c.displayMode || 'pve';
     c.rankedColumns = rankColumns(c.columns || [], m, dir[m], m === 'pve' ? focus : null);
   }
   const hwLine = gunHardwareLine(group, copies, dir);
