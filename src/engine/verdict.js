@@ -12,16 +12,31 @@ const ELEMENT_LABEL = { stasis: 'Stasis', arc: 'Arc', void: 'Void', solar: 'Sola
 
 // Weapon frame context. pvp:false / pve:false hard-block that mode (e.g. a
 // Support Frame heals allies — it's a PvE tool, never a Crucible verdict).
+// rangeClass ('close' | 'long') tells the engine how the frame wants to fight,
+// so it can weigh a roll against the player's own range preference.
 const FRAMES = {
   'Support Frame': { pvp: false, note: 'Support Frame — heals allies on hipfire. A PvE support tool, not a duelist.' },
   'Wave Frame': { pvp: false, note: 'Wave Frame — a PvE add-clear wave, not a Crucible pick.' },
-  'High-Impact Frame': { note: 'High-Impact Frame — slow and hard-hitting; rewards calm, planted aim over run-and-gun.' },
-  'Lightweight Frame': { note: 'Lightweight Frame — extra move speed; built for aggressive, mobile play.' },
+  'Spreadshot Frame': { rangeClass: 'close', note: 'Spreadshot Frame — fires a close-range burst of pellets; an in-your-face brawler, deadly up close and falling off hard at range.' },
+  'High-Impact Frame': { rangeClass: 'long', note: 'High-Impact Frame — slow and hard-hitting; rewards calm, planted aim over run-and-gun.' },
+  'Lightweight Frame': { rangeClass: 'close', note: 'Lightweight Frame — extra move speed; built for aggressive, mobile play.' },
   'Rapid-Fire Frame': { note: 'Rapid-Fire Frame — fast and forgiving, with deeper mags and faster empty reloads.' },
-  'Aggressive Frame': { note: 'Aggressive Frame — heavy hitter that wants you in their face.' },
+  'Aggressive Frame': { rangeClass: 'close', note: 'Aggressive Frame — heavy hitter that wants you in their face.' },
   'Adaptive Frame': { note: 'Adaptive Frame — the all-rounder; flexible across ranges.' },
-  'Precision Frame': { note: 'Precision Frame — tight recoil and reliable, consistent damage.' },
+  'Precision Frame': { rangeClass: 'long', note: 'Precision Frame — tight recoil and reliable, consistent damage.' },
 };
+
+// How well a frame's natural range fits the player's range preference. A close
+// brawler in the hands of a Sightline player is a poor fit (esp. in PvP, where
+// range wins duels); a Sightline frame for a Knife-fighter, likewise. PvE leans
+// on builds more than spacing, so the effect there is light.
+function frameRangeAdj(frameInfo, dir, mode) {
+  if (!frameInfo || !dir) return 0;
+  const cls = { close: 1, long: -1 }[frameInfo.rangeClass];
+  if (cls == null) return 0;
+  const weight = mode === 'pvp' ? 0.16 : 0.05;
+  return cls * (dir.range || 0) * weight; // dir.range: + Knife-fighter / - Sightline
+}
 
 function clamp(x, m) {
   return Math.max(-m, Math.min(m, x));
@@ -201,6 +216,8 @@ const SYNERGY = [
   ['Headstone', 'Chill Clip', 1.5, 'freeze, then crystal, then shatter'],
   ['Kill Clip', 'Repulsor Brace', 1.5, 'a damage spike while your overshield holds'],
   ['Incandescent', 'Subsistence', 1.5, 'scorch the room while the mag refills itself'],
+  ['Dimensional Shift', 'Repulsor Brace', 2, 'Void Breaches keep your overshield loop alive'],
+  ['Dimensional Shift', 'Destabilizing Rounds', 2, 'volatile kills make the Breaches you spend'],
 ];
 
 function synergyBetween(a, b) {
@@ -332,6 +349,7 @@ export function gradeGun(group, usageKills, profile) {
         const r = rollPersonal(traits, mode, dir[mode], mode === 'pve' ? focus : null);
         if (!b || r.score > b.score) b = r;
       }
+      if (b) b.score += frameRangeAdj(frameInfo, dir[mode], mode);
       perMode[mode] = b;
     }
     return {
@@ -378,12 +396,19 @@ export function gradeGun(group, usageKills, profile) {
   }
 
   // Flex: hold the single best non-keeper copy per element, ranked by the same
-  // personal score — so the strongest build roll actually wins the slot.
+  // personal score — so the strongest build roll actually wins the slot. Skip
+  // any element a keeper already covers (no point flexing a second Void copy
+  // when your Void keeper is the same build).
+  const keeperElements = new Set();
+  for (const mode of MODES) {
+    const k = best[mode];
+    if (k && k[mode]?.element) keeperElements.add(k[mode].element);
+  }
   const flexByElement = {};
   for (const c of copies) {
     if (c.keep) continue;
     const el = c.pve?.element || c.pvp?.element;
-    if (!el) continue;
+    if (!el || keeperElements.has(el)) continue;
     const sc = Math.max(c.pve?.score || 0, c.pvp?.score || 0);
     if (sc < FLEX_FLOOR) continue;
     const cur = flexByElement[el];

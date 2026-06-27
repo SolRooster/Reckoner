@@ -120,6 +120,9 @@ export const PERKS_REC = {
   "Fourth Time's the Charm": { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'rapid precision hits refund two rounds to the mag — endless uptime for a damage perk' },
   'Cascade Point': { axes: { cadence: 1 }, pve: 2, pvp: 0, role: 'dps', note: 'an ability kill makes your next seconds fire far faster — a burst-DPS swap perk on fusions, LFRs and swords' },
   'Precision Frame': { axes: {}, pve: 1, pvp: 1, role: 'utility', note: 'consistent, low-recoil delivery — a reliable base for any roll' },
+  'Collective Action': { axes: { engine: 1 }, pve: 2, pvp: 1, role: 'dps', build: true, note: 'weapon damage spikes while you hold an Armor Charge — rewards an ability/charge build, dead weight without one' },
+  'Dimensional Shift': { axes: { engine: 1 }, pve: 3, pvp: 1, role: 'dps', element: 'void', note: 'spend a Void Breach to spike damage — core fuel for a Void breach build (pairs with Repulsor Brace and Destabilizing)' },
+  Quickdraw: { axes: { tempo: 1, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'near-instant ready and aim — for aggressive, close-quarters PvP swaps' },
 };
 
 // How to describe the player's own tendency on each axis pole.
