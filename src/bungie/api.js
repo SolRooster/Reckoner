@@ -2,7 +2,6 @@
 // API key stays server-side. Every helper returns the unwrapped `.Response`.
 import { CONFIG } from './config.js';
 import { getToken } from './auth.js';
-
 async function bungie(path, { auth = true, method = 'GET', body } = {}) {
   const headers = {};
   if (auth) {
@@ -58,4 +57,14 @@ export function getCharacterWeaponStats(membershipType, membershipId, characterI
 // Public manifest entity — no user auth needed; the Worker adds the API key.
 export function getItemDefinition(hash) {
   return bungie(`Destiny2/Manifest/DestinyInventoryItemDefinition/${hash}/`, { auth: false });
+}
+
+// Lock (state=true) or unlock (state=false) a specific instanced item. Needs the
+// OAuth "MoveEquipDestinyItems" scope on the Bungie app. characterId is any of
+// the player's characters; the item may live in the vault.
+export function setItemLockState(membershipType, itemId, characterId, state) {
+  return bungie('Destiny2/Actions/Items/SetLockState/', {
+    method: 'POST',
+    body: { state, itemId, characterId, membershipType },
+  });
 }

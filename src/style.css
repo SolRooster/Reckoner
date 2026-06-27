@@ -281,3 +281,53 @@ html, body {
 }
 .vault-blurb { margin: 0 0 12px; color: var(--ink); font-size: 0.9rem; line-height: 1.5; }
 .vault-blurb strong { color: var(--amber); }
+
+/* ---- Vault tiles + filter + bulk lock --------------------------------- */
+.vault-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0 10px; }
+.vault-search {
+  flex: 1 1 220px; min-width: 180px; background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+  padding: 8px 12px; font-size: 0.9rem;
+}
+.vault-search::placeholder { color: var(--muted); }
+.vfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+.vfilter {
+  background: transparent; border: 1px solid var(--line); color: var(--muted);
+  border-radius: 999px; padding: 5px 12px; font-size: 0.8rem; cursor: pointer;
+}
+.vfilter.active { color: var(--ink); border-color: var(--amber); }
+.vfilter-n { opacity: 0.7; }
+
+.bulk-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 14px; }
+.bulk-status { color: var(--muted); font-size: 0.82rem; }
+.bulk-note { margin: 0 0 14px; }
+
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.tile {
+  position: relative; border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: 10px; padding: 12px 12px 10px; background: rgba(255, 255, 255, 0.015);
+}
+.tile.hidden { display: none; }
+.tile.keep { border-left-color: #67e08c; }
+.tile.flex { border-left-color: #6cb8ff; }
+.tile.shard { border-left-color: #ff8a80; }
+.tile.unsure { border-left-color: var(--amber); }
+.tile-lock {
+  position: absolute; top: 8px; right: 8px; background: transparent; border: none;
+  cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 2px; opacity: 0.85;
+}
+.tile-lock:hover { opacity: 1; }
+.tile-lock:disabled { opacity: 0.4; cursor: default; }
+.tile-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); padding-right: 22px; }
+.tile-meta { color: var(--muted); font-size: 0.74rem; margin: 2px 0 8px; }
+.tile-perks { color: var(--ink); font-size: 0.88rem; font-weight: 600; }
+.tile-why { color: var(--muted); font-size: 0.76rem; font-style: italic; margin-top: 6px; }
+.tile-verdict {
+  margin-top: 8px; display: inline-block; font-size: 0.7rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 999px;
+}
+.tile-verdict.keep { background: rgba(103, 224, 140, 0.14); color: #67e08c; }
+.tile-verdict.flex { background: rgba(108, 184, 255, 0.14); color: #6cb8ff; }
+.tile-verdict.shard { background: rgba(255, 90, 78, 0.14); color: #ff8a80; }
+.tile-verdict.unsure { background: rgba(245, 185, 66, 0.14); color: var(--amber); }
+

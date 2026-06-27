@@ -7,6 +7,7 @@ import {
   getCharacterWeaponStats,
   getItemDefinition,
   getFullProfile,
+  setItemLockState,
 } from './bungie/api.js';
 import { loadItems } from './bungie/manifest.js';
 import { gradeGun } from './engine/verdict.js';
@@ -14,7 +15,6 @@ import { PERKS_REC } from './assessment/report.js';
 import { AXES, QUESTIONS, SHARED_AXES, MODE_AXES } from './assessment/questions.js';
 import { scoreAnswers, archetype, saveProfile, loadProfile } from './assessment/profile.js';
 import { buildReport } from './assessment/report.js';
-
 const app = document.querySelector('#app');
 
 boot();
@@ -92,7 +92,11 @@ async function scanVault(membershipType, membershipId, weaponData) {
     renderProgress('Reading your vault\u2026');
     const bungieProfile = await getFullProfile(membershipType, membershipId);
     const weapons = collectWeapons(bungieProfile, items);
-    renderVault(weapons, buildUsageMap(weaponData), loadProfile());
+    const characterId =
+      Object.keys(bungieProfile.characterInventories?.data ?? {})[0] ||
+      Object.keys(bungieProfile.characterEquipment?.data ?? {})[0] ||
+      null;
+    renderVault(weapons, buildUsageMap(weaponData), loadProfile(), { membershipType, characterId });
   } catch (e) {
     renderError(e.message);
   }
@@ -130,7 +134,18 @@ function collectWeapons(profile, items) {
     const reusableInfo = reusableData[it.itemInstanceId];
     const { columns, hardware } = readPerks(def, socketInfo, reusableInfo, items);
     const frame = readFrame(def, socketInfo, items);
-    weapons.push({ hash: it.itemHash, name: def.name, type: def.typeName, frame, columns, hardware });
+    const roll = columns.map((col) => col[0]).filter(Boolean); // currently socketed traits
+    weapons.push({
+      hash: it.itemHash,
+      instanceId: it.itemInstanceId,
+      name: def.name,
+      type: def.typeName,
+      frame,
+      columns,
+      hardware,
+      roll,
+      locked: ((it.state || 0) & 1) === 1,
+    });
   }
   return weapons;
 }
@@ -195,20 +210,61 @@ function readPerks(def, socketInfo, reusableInfo, items) {
   return { columns, hardware };
 }
 
-function renderVault(weapons, usageMap, doctrine) {
+function renderVault(weapons, usageMap, doctrine, lockCtx) {
   const byHash = new Map();
   for (const w of weapons) {
     if (!byHash.has(w.hash)) byHash.set(w.hash, { name: w.name, type: w.type, frame: w.frame, copies: [] });
-    byHash.get(w.hash).copies.push({ columns: w.columns, hardware: w.hardware });
+    byHash.get(w.hash).copies.push({
+      instanceId: w.instanceId,
+      columns: w.columns,
+      hardware: w.hardware,
+      roll: w.roll,
+      locked: w.locked,
+    });
   }
-  const groups = [...byHash.values()].sort((a, b) => b.copies.length - a.copies.length);
-  const graded = groups.map((g) => ({ group: g, ...gradeGun(g, usageMap.get(g.name), doctrine) }));
+  const groups = [...byHash.values()];
+
+  // One tile per physical copy, graded as a whole gun.
+  const tiles = [];
+  for (const g of groups) {
+    const { copies } = gradeGun(g, usageMap.get(g.name), doctrine);
+    for (const c of copies) {
+      tiles.push({
+        instanceId: c.instanceId,
+        name: g.name,
+        frame: g.frame,
+        type: g.type,
+        traits: c.traits || [],
+        tier: c.tier,
+        verdict: c.verdict,
+        why: c.why || '',
+        locked: !!c.locked,
+      });
+    }
+  }
+  const order = { keep: 0, flex: 1, unsure: 2, shard: 3 };
+  tiles.sort((a, b) => order[a.tier] - order[b.tier] || a.name.localeCompare(b.name));
+  const counts = tiles.reduce((m, t) => ((m[t.tier] = (m[t.tier] || 0) + 1), m), {});
 
   const doctrineNote = doctrine
     ? `<p class="doctrine-note">Graded against your Doctrine &mdash; PvE: <b>${escapeHtml(
         archetype(doctrine, 'pve')
       )}</b> \u00b7 PvP: <b>${escapeHtml(archetype(doctrine, 'pvp'))}</b></p>`
-    : `<p class="doctrine-note subtle">No Doctrine yet &mdash; take the Combat Assessment on the dashboard for verdicts tuned to <i>your</i> playstyle.</p>`;
+    : `<p class="doctrine-note subtle">No Doctrine yet &mdash; take the Combat Assessment for verdicts tuned to <i>your</i> playstyle.</p>`;
+
+  const chip = (key, label, n) =>
+    `<button class="vfilter${key === 'all' ? ' active' : ''}" data-tier="${key}">${label}${
+      n != null ? ` <span class="vfilter-n">${n}</span>` : ''
+    }</button>`;
+
+  const lockable = lockCtx && lockCtx.characterId;
+  const bulkBar = lockable
+    ? `<div class="bulk-bar">
+         <button id="lock-keepers" class="btn-secondary">Lock keepers</button>
+         <button id="unlock-shards" class="btn-secondary">Unlock shards</button>
+         <span id="bulk-status" class="bulk-status"></span>
+       </div>`
+    : `<p class="subtle bulk-note">This sign-in can\u2019t lock items \u2014 enable \u201CMove or equip Destiny items\u201D on your Bungie app, then sign out and back in to prep shards here.</p>`;
 
   app.innerHTML = `
     <header class="topbar">
@@ -216,56 +272,136 @@ function renderVault(weapons, usageMap, doctrine) {
       <button id="back" class="btn-link">&larr; Back</button>
     </header>
     <section class="dash">
-      <h2>Your vault: ${weapons.length} legendary weapon${weapons.length === 1 ? '' : 's'},
-        ${groups.length} unique.</h2>
+      <h2>Your vault: ${weapons.length} legendary${weapons.length === 1 ? '' : 's'}, ${groups.length} unique.</h2>
       ${doctrineNote}
-      <p class="subtle">The reckoning \u2014 keepers up top, shards called out. Two traits drive every verdict.</p>
-      <div class="vault">
-        ${graded.map(vaultCard).join('') || '<p class="subtle">No legendary weapons found.</p>'}
+      <div class="vault-controls">
+        <input id="vault-search" class="vault-search" type="search" placeholder="Filter by gun or perk\u2026" />
+        <div class="vfilters">
+          ${chip('all', 'All', tiles.length)}
+          ${chip('keep', 'Keep', counts.keep || 0)}
+          ${chip('flex', 'Flex', counts.flex || 0)}
+          ${chip('shard', 'Shard', counts.shard || 0)}
+          ${counts.unsure ? chip('unsure', 'Unsure', counts.unsure) : ''}
+        </div>
+      </div>
+      ${bulkBar}
+      <div class="tile-grid" id="tile-grid">
+        ${tiles.map(vaultTile).join('') || '<p class="subtle">No legendary weapons found.</p>'}
       </div>
     </section>`;
 
   document.querySelector('#back').addEventListener('click', () => boot());
-}
 
-function vaultCard({ group, rolls, blurb, frameNote }) {
-  const keepFlex = rolls.filter((r) => r.keep || r.flex);
-  const shards = rolls.filter((r) => !r.keep && !r.flex);
-  const MAX_SHARDS = 6;
-  const visible = [...keepFlex, ...shards.slice(0, MAX_SHARDS)];
-  const hidden = Math.max(0, shards.length - MAX_SHARDS);
-  const perkTip = (t) => (PERKS_REC[t]?.note ? `${t}: ${PERKS_REC[t].note}` : t);
-
-  const rows = visible
-    .map((r) => {
-      const cls = r.keep ? 'keep' : r.flex ? 'flex' : r.verdict.startsWith('Unsure') ? 'unsure' : 'shard';
-      const tip = escapeHtml(r.traits.map(perkTip).join(' \u2014 '));
-      const why = (r.keep || r.flex) && r.why ? `<span class="roll-why">${escapeHtml(r.why)}</span>` : '';
-      return `<li>
-        <span class="roll-count" title="copies that can roll this">&times;${r.count}</span>
-        <span class="roll-traits" title="${tip}">${r.traits.map(escapeHtml).join(' + ') || '\u2014'}</span>
-        ${why}
-        <span class="roll-verdict ${cls}">${escapeHtml(r.verdict)}</span>
-      </li>`;
+  // ---- filtering ----
+  const grid = document.querySelector('#tile-grid');
+  const search = document.querySelector('#vault-search');
+  let activeTier = 'all';
+  const applyFilter = () => {
+    const q = search.value.trim().toLowerCase();
+    grid.querySelectorAll('.tile').forEach((el) => {
+      const okTier = activeTier === 'all' || el.dataset.tier === activeTier;
+      const okText = !q || el.dataset.name.includes(q) || el.dataset.perks.includes(q);
+      el.classList.toggle('hidden', !(okTier && okText));
+    });
+  };
+  search.addEventListener('input', applyFilter);
+  document.querySelectorAll('.vfilter').forEach((b) =>
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.vfilter').forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+      activeTier = b.dataset.tier;
+      applyFilter();
     })
-    .join('');
-  const moreLine = hidden > 0
-    ? `<li class="roll-more subtle">+${hidden} more shardable roll${hidden === 1 ? '' : 's'}</li>`
-    : '';
-  const archetype = [group.frame, group.type].filter(Boolean).join(' \u00b7 ') || group.type || '';
-  return `<div class="vault-card">
-    <div class="vault-head">
-      <span class="vault-name">${escapeHtml(group.name)}</span>
-      <span class="vault-meta">${escapeHtml(archetype)} &middot; &times;${group.copies.length}</span>
-    </div>
-    ${frameNote ? `<p class="frame-note">${escapeHtml(frameNote)}</p>` : ''}
-    <p class="vault-blurb">${renderBlurb(blurb)}</p>
-    <ul class="roll-list">${rows}${moreLine}</ul>
-  </div>`;
+  );
+
+  // ---- lock / unlock ----
+  if (!lockable) return;
+  const tileById = new Map(tiles.map((t) => [t.instanceId, t]));
+  const setLockUI = (id, locked) => {
+    const t = tileById.get(id);
+    if (t) t.locked = locked;
+    const btn = grid.querySelector(`.tile-lock[data-id="${id}"]`);
+    if (btn) {
+      btn.textContent = locked ? '\uD83D\uDD12' : '\uD83D\uDD13';
+      btn.title = locked ? 'Locked' : 'Unlocked';
+    }
+  };
+  const statusEl = () => document.querySelector('#bulk-status');
+
+  grid.querySelectorAll('.tile-lock').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const t = tileById.get(id);
+      if (!t) return;
+      const next = !t.locked;
+      btn.disabled = true;
+      try {
+        await setItemLockState(lockCtx.membershipType, id, lockCtx.characterId, next);
+        setLockUI(id, next);
+      } catch (e) {
+        statusEl().textContent = lockErr(e);
+      } finally {
+        btn.disabled = false;
+      }
+    })
+  );
+
+  const runBulk = async (targets, state, verb) => {
+    const el = statusEl();
+    const work = targets.filter((t) => t.locked !== state);
+    if (!work.length) {
+      el.textContent = `Nothing to ${verb}.`;
+      return;
+    }
+    let done = 0;
+    let failed = 0;
+    for (const t of work) {
+      try {
+        await setItemLockState(lockCtx.membershipType, t.instanceId, lockCtx.characterId, state);
+        setLockUI(t.instanceId, state);
+        done += 1;
+      } catch (e) {
+        failed += 1;
+        if (/scope|permission|access|forbidden|auth/i.test(e.message)) {
+          el.textContent = lockErr(e);
+          return;
+        }
+      }
+      el.textContent = `${verb === 'lock' ? 'Locking' : 'Unlocking'}\u2026 ${done}/${work.length}${
+        failed ? ` (${failed} failed)` : ''
+      }`;
+    }
+    el.textContent = `Done \u2014 ${done} ${state ? 'locked' : 'unlocked'}${failed ? `, ${failed} failed` : ''}.`;
+  };
+  document
+    .querySelector('#lock-keepers')
+    .addEventListener('click', () => runBulk(tiles.filter((t) => t.tier === 'keep' || t.tier === 'flex'), true, 'lock'));
+  document
+    .querySelector('#unlock-shards')
+    .addEventListener('click', () => runBulk(tiles.filter((t) => t.tier === 'shard'), false, 'unlock'));
 }
 
-function renderBlurb(text) {
-  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+function lockErr(e) {
+  return /scope|permission|access|forbidden|auth/i.test(e.message)
+    ? 'Bungie denied lock access \u2014 enable \u201CMove or equip Destiny items\u201D on your Bungie app, then sign out and back in.'
+    : `Couldn\u2019t update lock: ${e.message}`;
+}
+
+function vaultTile(t) {
+  const perks = t.traits.length ? t.traits.map(escapeHtml).join(' + ') : '\u2014';
+  const lock = t.locked ? '\uD83D\uDD12' : '\uD83D\uDD13';
+  return `<div class="tile ${t.tier}" data-tier="${t.tier}" data-name="${escapeHtml(
+    t.name.toLowerCase()
+  )}" data-perks="${escapeHtml(t.traits.join(' ').toLowerCase())}">
+    <button class="tile-lock" data-id="${escapeHtml(t.instanceId)}" title="${
+    t.locked ? 'Locked' : 'Unlocked'
+  }">${lock}</button>
+    <div class="tile-name">${escapeHtml(t.name)}</div>
+    <div class="tile-meta">${escapeHtml([t.frame, t.type].filter(Boolean).join(' \u00b7 '))}</div>
+    <div class="tile-perks">${perks}</div>
+    ${t.why ? `<div class="tile-why">${escapeHtml(t.why)}</div>` : ''}
+    <div class="tile-verdict ${t.tier}">${escapeHtml(t.verdict)}</div>
+  </div>`;
 }
 
 // ---- Milestone 1: the API spills your secrets -----------------------------

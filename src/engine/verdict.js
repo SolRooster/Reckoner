@@ -199,83 +199,102 @@ function rollModeScore(traits, mode, dir, focus) {
   return { base, keepValue, score: keepValue * 10 + clamp(fit, 8) + focusBoost * 8, recognized };
 }
 
-// group: { name, type, copies: [{ traits, extras }] }
-// usageKills: number | undefined.  profile: Doctrine profile | null.
+// group: { name, type, frame, copies: [{ instanceId, columns, hardware, roll, locked }] }
+// Grades every physical copy as a whole (one verdict per instance) by its best
+// achievable roll. Within a gun model the top copy per mode is the Keeper, an
+// element-synergy copy is Flex, the rest are Shard.
 export function gradeGun(group, usageKills, profile) {
   const frameInfo = FRAMES[group.frame] || null;
   const focus = topFocus(profile);
   const dir = { pve: dirOf(profile, 'pve'), pvp: dirOf(profile, 'pvp') };
-  const rolls = dedupeRolls(group.copies).map((r) => {
-    r.pve = rollModeScore(r.traits, 'pve', dir.pve, focus);
-    r.pvp = rollModeScore(r.traits, 'pvp', dir.pvp, null);
-    r.recognized = Math.max(r.pve.recognized, r.pvp.recognized);
-    return r;
+
+  const copies = group.copies.map((c) => {
+    const cols = c.columns && c.columns.length ? c.columns : [c.roll || []];
+    const combos = cartesian(cols);
+    const perMode = {};
+    for (const mode of MODES) {
+      let b = null;
+      for (const traits of combos) {
+        const s = rollModeScore(traits, mode, dir[mode], mode === 'pve' ? focus : null);
+        if (!b || s.score > b.score) b = { ...s, traits };
+      }
+      perMode[mode] = b;
+    }
+    return {
+      instanceId: c.instanceId,
+      hardware: c.hardware,
+      locked: !!c.locked,
+      roll: c.roll || [],
+      pve: perMode.pve,
+      pvp: perMode.pvp,
+      recognized: Math.max(perMode.pve?.recognized || 0, perMode.pvp?.recognized || 0),
+    };
   });
 
-  // Best roll per mode — ranked by standalone (Keep) value, not raw power, so
-  // build-dependent perks don't steal the Keep. Skip modes the frame can't play.
+  // Best copy per mode = Keep. Skip modes this frame can't play.
   const best = {};
   for (const mode of MODES) {
     if (frameInfo && frameInfo[mode] === false) continue;
     let b = null;
-    for (const r of rolls) {
-      if (r[mode].keepValue < 2) continue;
-      if (!b || r[mode].score > b[mode].score || (r[mode].score === b[mode].score && r.count > b.count)) {
-        b = r;
-      }
+    for (const c of copies) {
+      if ((c[mode]?.keepValue || 0) < 2) continue;
+      if (!b || c[mode].score > b[mode].score) b = c;
     }
     if (b) best[mode] = b;
   }
 
-  for (const r of rolls) {
+  for (const c of copies) {
     const keepFor = [];
-    if (best.pve === r) keepFor.push('PvE');
-    if (best.pvp === r) keepFor.push('PvP');
+    if (best.pve === c) keepFor.push('PvE');
+    if (best.pvp === c) keepFor.push('PvP');
     if (keepFor.length) {
-      r.keep = true;
-      r.keepModes = keepFor;
-      r.verdict = `Keep (${keepFor.join(' + ')})`;
-    } else if (r.pve.base > 0 || r.pvp.base > 0) {
-      r.keep = false;
-      r.verdict = 'Shard (outclassed dupe)';
-    } else if (r.recognized < r.traits.length) {
-      r.keep = false;
-      r.verdict = 'Unsure — your call';
+      c.keep = true;
+      c.tier = 'keep';
+      c.keepModes = keepFor;
+      c.verdict = `Keep (${keepFor.join(' + ')})`;
+      c.traits = (best.pve === c ? c.pve?.traits : c.pvp?.traits) || c.roll;
     } else {
-      r.keep = false;
-      r.verdict = 'Shard';
+      const showMode = (c.pve?.score || 0) >= (c.pvp?.score || 0) ? 'pve' : 'pvp';
+      c.traits = c[showMode]?.traits || c.roll;
+      if (c.recognized < c.traits.length) {
+        c.tier = 'unsure';
+        c.verdict = 'Unsure \u2014 your call';
+      } else {
+        c.tier = 'shard';
+        c.verdict = 'Shard';
+      }
     }
   }
 
-  // Flex: keep the best non-keeper roll per synergy element — a roll worth
-  // holding for when you build that subclass. Works for element-agnostic players
-  // who rotate builds (keep one Stasis flavor, one Void flavor, etc.).
+  // Flex: hold the best non-keeper copy per synergy element (one per build flavor).
   const flexByElement = {};
-  for (const r of rolls) {
-    if (r.keep) continue;
-    const syn = rollSynergyElement(r);
+  for (const c of copies) {
+    if (c.keep) continue;
+    const syn = rollSynergyElement({ traits: c.traits });
     if (!syn) continue;
     const cur = flexByElement[syn.element];
-    if (!cur || syn.strength > cur.strength) flexByElement[syn.element] = { roll: r, strength: syn.strength };
+    if (!cur || syn.strength > cur.strength) flexByElement[syn.element] = { copy: c, strength: syn.strength };
   }
   for (const element of Object.keys(flexByElement)) {
-    const r = flexByElement[element].roll;
-    r.flex = true;
-    r.flexElement = element;
-    r.verdict = `Flex (${ELEMENT_LABEL[element]})`;
+    const c = flexByElement[element].copy;
+    c.flex = true;
+    c.tier = 'flex';
+    c.flexElement = element;
+    c.verdict = `Flex (${ELEMENT_LABEL[element]})`;
   }
 
-  for (const r of rolls) {
-    if (r.keep || r.flex) r.why = rollWhy(r, dir, focus);
+  for (const c of copies) {
+    if (c.keep || c.flex) c.why = rollWhy(c, dir, focus);
   }
-  const hwLine = gunHardwareLine(group, rolls, dir);
+  const hwLine = gunHardwareLine(group, copies, dir);
 
-  const rank = (r) => (r.keep ? 2 : r.flex ? 1 : 0);
-  rolls.sort((a, b) => rank(b) - rank(a) || b.count - a.count);
+  const rank = (c) => (c.keep ? 3 : c.flex ? 2 : c.tier === 'unsure' ? 1 : 0);
+  copies.sort((a, b) => rank(b) - rank(a));
+
   return {
-    rolls,
+    copies,
     frameNote: frameInfo?.note || '',
-    blurb: composeBlurb(group, rolls, profile, focus, hwLine),
+    blurb: composeBlurb(group, copies, profile, focus, hwLine),
   };
 }
 
@@ -316,38 +335,28 @@ function dedupeRolls(copies) {
   return [...map.values()];
 }
 
-function composeBlurb(group, rolls, profile, focus, hwLine) {
+function composeBlurb(group, copies, profile, focus, hwLine) {
   const total = group.copies.length;
-  const keepers = rolls.filter((r) => r.keep);
-  const flexes = rolls.filter((r) => r.flex);
+  const keepers = copies.filter((c) => c.keep);
+  const flexes = copies.filter((c) => c.flex);
+  const shards = copies.filter((c) => c.tier === 'shard');
+  const parts = [];
 
   if (!keepers.length && !flexes.length) {
-    if (rolls.some((r) => r.verdict.startsWith('Unsure'))) {
-      return `Some perks here aren't in my book yet — check the "Unsure" rolls, then shard the rest.`;
+    if (copies.some((c) => c.tier === 'unsure')) {
+      parts.push(`Some perks here aren't in my book yet \u2014 your call on those.`);
+    } else {
+      parts.push(`Nothing here fits how you play. Shard all ${total}.`);
     }
-    return `Nothing here earns a slot for how you play. Shard all ${total}.`;
+    if (hwLine) parts.push(hwLine);
+    return parts.join(' ');
   }
 
-  const parts = [];
-  if (keepers.length) {
-    const star = keepers[0];
-    const modeText = keepers.map((k) => k.keepModes.join('+')).join(' & ');
-    parts.push(`Best roll: **${star.traits.join(' + ')}** (${modeText}).`);
-    if (total > 1) {
-      const n = star.count;
-      parts.push(
-        n >= total
-          ? `Every copy can roll it — keep 1, shard the rest.`
-          : `${n} of your ${total} copies can roll it — keep ${n === 1 ? 'that one' : 'those'}, shard the rest.`
-      );
-    }
-  }
-  if (flexes.length) {
-    const f = flexes
-      .map((x) => `${x.traits.join(' + ')} for ${ELEMENT_LABEL[x.flexElement]} builds`)
-      .join('; ');
-    parts.push(`Flex: ${f}.`);
-  }
+  const bits = [];
+  if (keepers.length) bits.push(`keep ${keepers.length}`);
+  if (flexes.length) bits.push(`flex ${flexes.length}`);
+  if (shards.length) bits.push(`shard ${shards.length}`);
+  parts.push(`${total} ${total === 1 ? 'copy' : 'copies'}: ${bits.join(', ')}.`);
   if (hwLine) parts.push(hwLine);
   return parts.join(' ');
 }
