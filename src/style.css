@@ -301,6 +301,7 @@ html, body {
   background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); color: var(--ink);
   border-radius: 8px; padding: 7px 10px; font-size: 0.82rem; cursor: pointer;
 }
+.vselect option { background: #161a22; color: var(--ink); }
 
 .bulk-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
 .bulk-status { color: var(--muted); font-size: 0.82rem; }
@@ -328,12 +329,20 @@ html, body {
 .tile-headtext { min-width: 0; }
 .tile-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
 .tile-meta { color: var(--muted); font-size: 0.74rem; margin-top: 2px; }
-.tile-perks { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 10px; }
-.perk-col { display: flex; flex-direction: column; gap: 2px; }
-.perk { color: var(--muted); font-size: 0.82rem; }
+.tile-perks { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 10px; align-items: start; }
+.perk-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.perk { color: var(--muted); font-size: 0.8rem; line-height: 1.3; }
 .perk.rec { color: var(--ink); font-weight: 700; }
 .tile.keep .perk.rec { color: #67e08c; }
 .tile.flex .perk.rec { color: #6cb8ff; }
+.perk-tier {
+  font-size: 0.58rem; font-weight: 800; margin-left: 5px; padding: 0 4px;
+  border-radius: 4px; vertical-align: middle;
+}
+.perk-tier.tS { background: rgba(245, 185, 66, 0.22); color: var(--amber); }
+.perk-tier.tA { background: rgba(103, 224, 140, 0.18); color: #67e08c; }
+.perk-tier.tB { background: rgba(108, 184, 255, 0.18); color: #6cb8ff; }
+.perk-tier.tC, .perk-tier.tD { background: rgba(255, 255, 255, 0.07); color: var(--muted); }
 .tile-why { color: var(--muted); font-size: 0.76rem; font-style: italic; margin-top: 8px; }
 .tile-verdict {
   margin-top: 8px; display: inline-block; font-size: 0.7rem; font-weight: 700;

@@ -175,6 +175,85 @@ function rollWhy(roll, dir, focus) {
   return star?.note || '';
 }
 
+// ---- Personalised perk stack-ranking --------------------------------------
+// Ranks every available perk in a column against the player's Doctrine, the
+// weapon's element/archetype, and cross-column synergy. Two perks that combo
+// (Detonator Beam + Shoot to Loot) both rise; an agnostic damage perk with no
+// synergy (PvE Target Lock) sinks.
+const SYNERGY = [
+  ['Detonator Beam', 'Shoot to Loot', 3, 'the blast drops ammo & orbs you vacuum up'],
+  ['Shoot to Loot', 'Chain Reaction', 2, 'shoot a brick, chain the whole room'],
+  ['Crystalline Corpsebloom', 'Rimestealer', 2, 'crystals feed your Frost Armor'],
+  ['Headstone', 'Rimestealer', 2, 'crystals feed your Frost Armor'],
+  ['Chill Clip', 'Rimestealer', 1.5, 'freeze, shatter, armor up'],
+  ['Demoralize', 'Destabilizing Rounds', 2, 'volatile + weaken stack hard'],
+  ['Rapid Hit', 'Target Lock', 2, 'reload uptime keeps the ramp alive'],
+  ['Envious Assassin', 'Bait and Switch', 2, 'overflow, then swap-burst'],
+  ['Reconstruction', 'Bait and Switch', 2, 'auto-fills straight into the burst'],
+  ['Jolting Feedback', 'Voltshot', 1.5, 'double Arc jolt sources'],
+];
+
+function synergyBetween(a, b) {
+  for (const [x, y, bonus, note] of SYNERGY) {
+    if ((a === x && b === y) || (a === y && b === x)) return { bonus, note };
+  }
+  return null;
+}
+
+const PERK_TIERS = [
+  [10, 'S'],
+  [7.5, 'A'],
+  [5, 'B'],
+  [3, 'C'],
+  [1, 'D'],
+];
+
+function perkTier(score) {
+  for (const [th, t] of PERK_TIERS) if (score >= th) return t;
+  return '';
+}
+
+function perkPersonalScore(name, mode, dir, focus, partners) {
+  const p = PERKS_REC[name];
+  const reasons = [];
+  let s = 0;
+  if (p) {
+    s += (p[mode] || 0) * 2.5; // base power in this mode
+    if (dir) for (const [a, w] of Object.entries(p.axes || {})) s += w * (dir[a] || 0) * 0.1;
+    if (dir && dir.engine > 0 && isBuild(p)) {
+      s += 2.5;
+      reasons.push(p.element ? `${p.element} build synergy` : 'build synergy');
+    }
+    if (mode === 'pve' && focus && p.role === focus) {
+      s += 1.5;
+      reasons.push(`${FOCUS_WORD[focus]} focus`);
+    }
+  }
+  let bestSyn = null;
+  for (const partner of partners) {
+    const syn = synergyBetween(name, partner);
+    if (syn && (!bestSyn || syn.bonus > bestSyn.bonus)) bestSyn = { partner, ...syn };
+  }
+  if (bestSyn) {
+    s += bestSyn.bonus;
+    reasons.unshift(`with ${bestSyn.partner}: ${bestSyn.note}`);
+  }
+  if (!reasons.length && p) reasons.push(p.role === 'dps' ? 'raw damage' : p.role);
+  return { score: s, reasons, recognized: !!p };
+}
+
+function rankColumns(cols, mode, dir, focus) {
+  return cols.map((col, i) => {
+    const partners = cols.filter((_, j) => j !== i).flat();
+    const ranked = col.map((name) => {
+      const { score, reasons, recognized } = perkPersonalScore(name, mode, dir, focus, partners);
+      return { name, score, tier: recognized ? perkTier(score) : '', why: reasons.join(' \u00b7 ') };
+    });
+    ranked.sort((a, b) => b.score - a.score);
+    return ranked;
+  });
+}
+
 function rollModeScore(traits, mode, dir, focus) {
   // Build-oriented (Architect) players value loop/build perks; gunfeel players
   // (Gunslinger) want standalone perks. The Engine axis decides.
@@ -286,6 +365,14 @@ export function gradeGun(group, usageKills, profile) {
 
   for (const c of copies) {
     if (c.keep || c.flex) c.why = rollWhy(c, dir, focus);
+  }
+  for (const c of copies) {
+    const m = c.keep
+      ? c.keepModes[0].toLowerCase()
+      : (c.pve?.score || 0) >= (c.pvp?.score || 0)
+      ? 'pve'
+      : 'pvp';
+    c.rankedColumns = rankColumns(c.columns || [], m, dir[m], m === 'pve' ? focus : null);
   }
   const hwLine = gunHardwareLine(group, copies, dir);
 

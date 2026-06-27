@@ -247,7 +247,7 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
         type: g.type,
         icon: g.icon,
         element: g.element,
-        columns: c.columns || [],
+        rankedColumns: c.rankedColumns || [],
         traits: c.traits || [],
         tier: c.tier,
         verdict: c.verdict,
@@ -297,9 +297,9 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
       ${doctrineNote}
       <div class="vault-controls">
         <input id="vault-search" class="vault-search" type="search" placeholder="Filter by gun or perk\u2026" />
-        ${sel('f-type', 'Any type', distinct('type'))}
-        ${sel('f-frame', 'Any archetype', distinct('frame'))}
-        ${sel('f-element', 'Any element', distinct('element'))}
+        ${sel('f-type', 'Weapon Type', distinct('type'))}
+        ${sel('f-frame', 'Archetype', distinct('frame'))}
+        ${sel('f-element', 'Element', distinct('element'))}
       </div>
       <div class="vfilters">
         ${chip('all', 'All', tiles.length)}
@@ -432,18 +432,20 @@ function lockErr(e) {
 function vaultTile(t) {
   const highlight = t.tier === 'keep' || t.tier === 'flex';
   const recSet = new Set(highlight ? t.traits : []);
-  const cols = (t.columns && t.columns.length ? t.columns : [t.traits]).filter((c) => c && c.length);
+  const cols = (t.rankedColumns && t.rankedColumns.length
+    ? t.rankedColumns
+    : [(t.traits || []).map((name) => ({ name, tier: '', why: '' }))]
+  ).filter((c) => c && c.length);
   const perksHtml = cols.length
     ? cols
-        .map(
-          (col) =>
-            `<div class="perk-col">${col
-              .map((p) => `<span class="perk${recSet.has(p) ? ' rec' : ''}">${escapeHtml(p)}</span>`)
-              .join('')}</div>`
-        )
+        .map((col) => `<div class="perk-col">${col.map((pk) => perkChip(pk, recSet)).join('')}</div>`)
         .join('')
     : '<span class="perk">\u2014</span>';
-  const allPerks = cols.flat().join(' ').toLowerCase();
+  const allPerks = cols
+    .flat()
+    .map((pk) => pk.name)
+    .join(' ')
+    .toLowerCase();
   const img = t.icon
     ? `<img class="tile-img" src="https://www.bungie.net${escapeHtml(t.icon)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />`
     : '<span class="tile-img tile-img-empty"></span>';
@@ -465,6 +467,13 @@ function vaultTile(t) {
     ${t.why ? `<div class="tile-why">${escapeHtml(t.why)}</div>` : ''}
     <div class="tile-verdict ${t.tier}">${escapeHtml(t.verdict)}</div>
   </div>`;
+}
+
+function perkChip(pk, recSet) {
+  const rec = recSet.has(pk.name) ? ' rec' : '';
+  const tier = pk.tier ? `<span class="perk-tier t${pk.tier}">${pk.tier}</span>` : '';
+  const title = pk.why ? ` title="${escapeHtml(pk.why)}"` : '';
+  return `<span class="perk${rec}"${title}>${escapeHtml(pk.name)}${tier}</span>`;
 }
 
 // ---- Milestone 1: the API spills your secrets -----------------------------
