@@ -10,12 +10,16 @@ import {
   setItemLockState,
 } from './bungie/api.js';
 import { loadItems } from './bungie/manifest.js';
+import { loadClarity } from './bungie/clarity.js';
 import { gradeGun } from './engine/verdict.js';
 import { PERKS_REC } from './assessment/report.js';
 import { AXES, QUESTIONS, SHARED_AXES, MODE_AXES } from './assessment/questions.js';
 import { scoreAnswers, archetype, saveProfile, loadProfile } from './assessment/profile.js';
 import { buildReport } from './assessment/report.js';
 const app = document.querySelector('#app');
+
+// Clarity perk descriptions (lowercased name -> text), loaded at scan time.
+let clarityByName = new Map();
 
 boot();
 
@@ -91,7 +95,11 @@ async function scanVault(membershipType, membershipId, weaponData) {
   try {
     const items = await loadItems((msg) => renderProgress(msg));
     renderProgress('Reading your vault\u2026');
-    const bungieProfile = await getFullProfile(membershipType, membershipId);
+    const [bungieProfile, clarity] = await Promise.all([
+      getFullProfile(membershipType, membershipId),
+      loadClarity((msg) => renderProgress(msg)).catch(() => new Map()),
+    ]);
+    clarityByName = clarity;
     const weapons = collectWeapons(bungieProfile, items);
     const characterId =
       Object.keys(bungieProfile.characterInventories?.data ?? {})[0] ||
@@ -473,7 +481,12 @@ function perkChip(pk, recSet) {
   const rec = recSet.has(pk.name) ? ' rec' : '';
   const cls = pk.tier === '?' ? 'tUnknown' : `t${pk.tier}`;
   const tier = pk.tier ? `<span class="perk-tier ${cls}">${escapeHtml(pk.tier)}</span>` : '';
-  const title = pk.why ? ` title="${escapeHtml(pk.why)}"` : '';
+  // Tooltip: Clarity's authoritative "what it does" (every perk), plus the
+  // doctrine "why it fits you" for perks the engine actually scores.
+  const desc = clarityByName.get(pk.name.toLowerCase());
+  const reason = pk.why && pk.tier !== '?' ? pk.why : '';
+  const tip = [desc, reason ? `For you: ${reason}` : ''].filter(Boolean).join('\n\n') || pk.why || '';
+  const title = tip ? ` title="${escapeHtml(tip)}"` : '';
   return `<span class="perk${rec}"${title}>${escapeHtml(pk.name)}${tier}</span>`;
 }
 
