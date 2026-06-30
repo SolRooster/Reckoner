@@ -358,6 +358,20 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
     })
   );
 
+  // ---- perk detail (Clarity "Community Research" card) ----
+  const openFromEvent = (e) => {
+    const el = e.target.closest('.perk-click');
+    if (!el) return false;
+    showPerkCard(el.dataset.name, el.dataset.tier, el.dataset.why);
+    return true;
+  };
+  grid.addEventListener('click', openFromEvent);
+  grid.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (openFromEvent(e)) e.preventDefault();
+    }
+  });
+
   // ---- lock / unlock ----
   if (!lockable) return;
   const tileById = new Map(tiles.map((t) => [t.instanceId, t]));
@@ -481,13 +495,62 @@ function perkChip(pk, recSet) {
   const rec = recSet.has(pk.name) ? ' rec' : '';
   const cls = pk.tier === '?' ? 'tUnknown' : `t${pk.tier}`;
   const tier = pk.tier ? `<span class="perk-tier ${cls}">${escapeHtml(pk.tier)}</span>` : '';
-  // Tooltip: Clarity's authoritative "what it does" (every perk), plus the
-  // doctrine "why it fits you" for perks the engine actually scores.
-  const desc = clarityByName.get(pk.name.toLowerCase());
-  const reason = pk.why && pk.tier !== '?' ? pk.why : '';
-  const tip = [desc, reason ? `For you: ${reason}` : ''].filter(Boolean).join('\n\n') || pk.why || '';
-  const title = tip ? ` title="${escapeHtml(tip)}"` : '';
-  return `<span class="perk${rec}"${title}>${escapeHtml(pk.name)}${tier}</span>`;
+  // The doctrine "why it fits you" stays in the quick-hover title; the full
+  // Clarity description lives in the attributed detail card (click/Enter).
+  const why = pk.why && pk.tier !== '?' ? pk.why : '';
+  const title = why ? ` title="${escapeHtml(why)}"` : '';
+  return `<span class="perk perk-click${rec}" role="button" tabindex="0" data-name="${escapeHtml(
+    pk.name
+  )}" data-tier="${escapeHtml(pk.tier || '')}" data-why="${escapeHtml(why)}"${title}>${escapeHtml(
+    pk.name
+  )}${tier}</span>`;
+}
+
+// Clarity attribution-compliant perk detail card. Clarity's community-written,
+// number-backed description is shown under a "Community Research" label and
+// credited to Clarity, alongside the engine's doctrine reasoning.
+function showPerkCard(name, tier, why) {
+  closePerkCard();
+  const desc = clarityByName.get((name || '').toLowerCase());
+  const badge =
+    tier && tier !== '?' ? `<span class="perk-tier t${escapeHtml(tier)}">${escapeHtml(tier)}</span>` : '';
+  const research = desc
+    ? `<div class="perk-pop-section"><div class="perk-pop-label">Community Research</div><p class="perk-pop-text">${escapeHtml(
+        desc
+      )}</p></div>`
+    : `<div class="perk-pop-section"><p class="perk-pop-text subtle">No community description on file for this perk yet.</p></div>`;
+  const forYou = why
+    ? `<div class="perk-pop-section"><div class="perk-pop-label for-you">For your Doctrine</div><p class="perk-pop-text">${escapeHtml(
+        why
+      )}</p></div>`
+    : '';
+  const el = document.createElement('div');
+  el.className = 'perk-pop-backdrop';
+  el.id = 'perk-pop';
+  el.innerHTML = `
+    <div class="perk-pop-card" role="dialog" aria-modal="true">
+      <button class="perk-pop-close" aria-label="Close">\u00d7</button>
+      <div class="perk-pop-head"><span class="perk-pop-name">${escapeHtml(name)}</span>${badge}</div>
+      ${research}
+      ${forYou}
+      <div class="perk-pop-credit">Community Research by
+        <a href="https://d2clarity.com" target="_blank" rel="noopener">Clarity</a></div>
+    </div>`;
+  el.addEventListener('click', (e) => {
+    if (e.target === el || e.target.closest('.perk-pop-close')) closePerkCard();
+  });
+  document.body.appendChild(el);
+  const onKey = (e) => {
+    if (e.key === 'Escape') {
+      closePerkCard();
+      document.removeEventListener('keydown', onKey);
+    }
+  };
+  document.addEventListener('keydown', onKey);
+}
+
+function closePerkCard() {
+  document.getElementById('perk-pop')?.remove();
 }
 
 // ---- Milestone 1: the API spills your secrets -----------------------------

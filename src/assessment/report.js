@@ -125,6 +125,13 @@ export const PERKS_REC = {
   Quickdraw: { axes: { tempo: 1, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'near-instant ready and aim — for aggressive, close-quarters PvP swaps' },
   'Threat Remover': { axes: { range: 1 }, pve: 1, pvp: 2, role: 'utility', note: 'landing nearly all pellets in the spread boosts reload, handling and stability — close-range consistency for Spreadshot frames' },
   'One-Two Punch': { axes: { range: 1 }, pve: 2, pvp: 1, role: 'utility', build: true, note: 'landing the full spread supercharges your next melee — the heart of a punch-shoot melee loop' },
+  // --- Support-frame & Stasis support pool (Decatur 02 etc.) ---
+  'Circle of Life': { axes: {}, pve: 3, pvp: 1, role: 'dps', note: 'healing allies with the weapon grants +25% damage for 11s (12.5% in PvP) — Support-frame DPS' },
+  Reciprocity: { axes: {}, pve: 2, pvp: 0, role: 'survival', note: 'healing allies returns HP to you per projectile — self-sustain for support play' },
+  Redirection: { axes: { cadence: 1 }, pve: 3, pvp: 0, role: 'dps', note: 'hits on minors bank stacks, then spend them for +50% damage on Elites and bosses — add-to-major burst' },
+  'Enlightened Action': { axes: { engine: -1 }, pve: 2, pvp: 1, role: 'economy', note: 'weapon hits stack up handling and reload (to +50) — smooth, self-sustaining gunfeel' },
+  'Lead from Light': { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'Orbs of Power bank stacks; kills spend them for faster Special ammo — economy and uptime' },
+  Meganeura: { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'precision kills detonate the target for elemental damage — a Dragonfly-style add-clear burst' },
 };
 
 // How to describe the player's own tendency on each axis pole.

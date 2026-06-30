@@ -222,6 +222,8 @@ const SYNERGY = [
   ['Killing Wind', 'Quickdraw', 1.5, 'speed and snap-aim chain into aggressive duels'],
   ['Pugilist', 'One-Two Punch', 2, 'punch, shoot, punch — a self-feeding melee loop'],
   ['Pugilist', 'Surrounded', 1.5, 'brawl in the thick of it'],
+  ['Physic', 'Circle of Life', 1.5, 'one heal triggers both restoration and a damage spike'],
+  ['Crystalline Corpsebloom', 'Meganeura', 1.5, 'crystals and precision pops blanket the room'],
 ];
 
 function synergyBetween(a, b) {
