@@ -12,7 +12,7 @@ import {
 import { loadItems } from './bungie/manifest.js';
 import { loadClarity } from './bungie/clarity.js';
 import { gradeGun } from './engine/verdict.js';
-import { PERKS_REC } from './assessment/report.js';
+import { PERKS_REC, getPerk, setPerkOverrides, isPerkBuiltIn, hasPerkOverride } from './assessment/report.js';
 import { AXES, QUESTIONS, SHARED_AXES, MODE_AXES } from './assessment/questions.js';
 import { scoreAnswers, archetype, saveProfile, loadProfile } from './assessment/profile.js';
 import { buildReport } from './assessment/report.js';
@@ -20,10 +20,14 @@ const app = document.querySelector('#app');
 
 // Clarity perk descriptions (lowercased name -> text), loaded at scan time.
 let clarityByName = new Map();
+// The inputs of the most recent vault scan, so the Perk Lab can re-grade
+// instantly after the player changes a rating (no refetch needed).
+let lastScan = null;
 
 boot();
 
 async function boot() {
+  setPerkOverrides(loadPerkOverrides());
   try {
     await handleRedirect();
   } catch (e) {
@@ -222,6 +226,7 @@ function readPerks(def, socketInfo, reusableInfo, items) {
 }
 
 function renderVault(weapons, usageMap, doctrine, lockCtx) {
+  lastScan = { weapons, usageMap, doctrine, lockCtx };
   const byHash = new Map();
   for (const w of weapons) {
     if (!byHash.has(w.hash))
@@ -242,6 +247,11 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
     });
   }
   const groups = [...byHash.values()];
+
+  // Every distinct perk in the vault — the finite set the Perk Lab lets you rate.
+  const perkNames = new Set();
+  for (const w of weapons) for (const col of w.columns || []) for (const n of col) perkNames.add(n);
+  const unrated = [...perkNames].filter((n) => !getPerk(n)).length;
 
   // One tile per physical copy, graded as a whole gun.
   const tiles = [];
@@ -317,12 +327,16 @@ function renderVault(weapons, usageMap, doctrine, lockCtx) {
         ${counts.unsure ? chip('unsure', 'Unsure', counts.unsure) : ''}
       </div>
       ${bulkBar}
+      <div class="lab-entry"><button id="perk-lab" class="btn-link">⚙ Perk Lab${
+        unrated ? ` — ${unrated} perk${unrated === 1 ? '' : 's'} need rating` : ' — all rated'
+      }</button></div>
       <div class="tile-grid" id="tile-grid">
         ${tiles.map(vaultTile).join('') || '<p class="subtle">No legendary weapons found.</p>'}
       </div>
     </section>`;
 
   document.querySelector('#back').addEventListener('click', () => boot());
+  document.querySelector('#perk-lab').addEventListener('click', () => renderPerkLab([...perkNames]));
 
   // ---- filtering ----
   const grid = document.querySelector('#tile-grid');
@@ -551,6 +565,127 @@ function showPerkCard(name, tier, why) {
 
 function closePerkCard() {
   document.getElementById('perk-pop')?.remove();
+}
+
+// ---- Perk Lab: player-rated perk overrides ---------------------------------
+
+const PERK_OVERRIDES_KEY = 'reckoner_perk_overrides';
+
+function loadPerkOverrides() {
+  try {
+    return JSON.parse(localStorage.getItem(PERK_OVERRIDES_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function savePerkOverrides(map) {
+  localStorage.setItem(PERK_OVERRIDES_KEY, JSON.stringify(map));
+  setPerkOverrides(map);
+}
+
+// Best-effort element guess from a Clarity description, so the player doesn't
+// have to tag it by hand.
+function deriveElement(desc) {
+  const d = (desc || '').toLowerCase();
+  for (const el of ['stasis', 'strand', 'arc', 'solar', 'void']) {
+    if (d.includes(el)) return el;
+  }
+  return undefined;
+}
+
+const LAB_ROLES = ['addclear', 'dps', 'survival', 'economy', 'utility'];
+const LAB_POWER = ['None', 'Niche', 'Strong', 'Top'];
+
+function renderPerkLab(names) {
+  const overrides = loadPerkOverrides();
+  const rated = (n) => !!getPerk(n);
+  const sorted = [...new Set(names)].sort(
+    (a, b) => (rated(a) ? 1 : 0) - (rated(b) ? 1 : 0) || a.localeCompare(b)
+  );
+  const needRating = sorted.filter((n) => !rated(n)).length;
+
+  const powerSel = (name, field, val) =>
+    `<select class="lab-input" data-field="${field}">${LAB_POWER.map(
+      (label, v) => `<option value="${v}"${v === val ? ' selected' : ''}>${label}</option>`
+    ).join('')}</select>`;
+  const roleSel = (val) =>
+    `<select class="lab-input" data-field="role"><option value="">role…</option>${LAB_ROLES.map(
+      (r) => `<option value="${r}"${r === val ? ' selected' : ''}>${r}</option>`
+    ).join('')}</select>`;
+
+  const row = (name) => {
+    const cur = overrides[name] || getPerk(name) || {};
+    const source = hasPerkOverride(name) ? 'yours' : isPerkBuiltIn(name) ? 'built-in' : 'unrated';
+    const desc = clarityByName.get(name.toLowerCase()) || 'No community description on file.';
+    return `<div class="lab-row source-${source}" data-name="${escapeHtml(name)}">
+      <div class="lab-top">
+        <span class="lab-name">${escapeHtml(name)}</span>
+        <span class="lab-source">${source}</span>
+      </div>
+      <p class="lab-desc">${escapeHtml(desc)}</p>
+      <div class="lab-controls">
+        <label>PvE ${powerSel(name, 'pve', cur.pve ?? 0)}</label>
+        <label>PvP ${powerSel(name, 'pvp', cur.pvp ?? 0)}</label>
+        ${roleSel(cur.role || '')}
+        <label class="lab-check"><input type="checkbox" class="lab-input" data-field="build"${
+          cur.build ? ' checked' : ''
+        }/> build</label>
+      </div>
+    </div>`;
+  };
+
+  app.innerHTML = `
+    <header class="topbar">
+      <span class="wordmark small">RECKONER</span>
+      <button id="lab-back" class="btn-link">&larr; Back to vault</button>
+    </header>
+    <section class="dash">
+      <h2>Perk Lab</h2>
+      <p class="subtle">Rate any perk in your vault and it overrides my model everywhere. ${needRating} of ${sorted.length} still need a rating — unrated ones are up top. Changes save instantly; “Apply” re-grades your vault.</p>
+      <input id="lab-search" class="vault-search" type="search" placeholder="Find a perk…" />
+      <div class="lab-list" id="lab-list">${sorted.map(row).join('')}</div>
+      <div class="bulk-bar"><button id="lab-apply" class="btn-primary">Apply &amp; re-grade</button></div>
+    </section>`;
+
+  const list = document.querySelector('#lab-list');
+  list.addEventListener('change', (e) => {
+    const r = e.target.closest('.lab-row');
+    if (!r) return;
+    const name = r.dataset.name;
+    const val = (f) => r.querySelector(`[data-field="${f}"]`);
+    const desc = clarityByName.get(name.toLowerCase());
+    const element = deriveElement(desc);
+    overrides[name] = {
+      pve: Number(val('pve').value),
+      pvp: Number(val('pvp').value),
+      role: val('role').value || 'utility',
+      build: val('build').checked,
+      ...(element ? { element } : {}),
+    };
+    savePerkOverrides(overrides);
+    r.classList.remove('source-unrated', 'source-built-in');
+    r.classList.add('source-yours');
+    r.querySelector('.lab-source').textContent = 'yours';
+  });
+
+  document.querySelector('#lab-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    list.querySelectorAll('.lab-row').forEach((r) => {
+      r.classList.toggle('hidden', !!q && !r.dataset.name.toLowerCase().includes(q));
+    });
+  });
+
+  document.querySelector('#lab-back').addEventListener('click', () => applyLabAndReturn());
+  document.querySelector('#lab-apply').addEventListener('click', () => applyLabAndReturn());
+}
+
+function applyLabAndReturn() {
+  if (lastScan) {
+    renderVault(lastScan.weapons, lastScan.usageMap, lastScan.doctrine, lastScan.lockCtx);
+  } else {
+    boot();
+  }
 }
 
 // ---- Milestone 1: the API spills your secrets -----------------------------

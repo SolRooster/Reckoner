@@ -380,6 +380,31 @@ html, body {
 }
 .perk-pop-credit a { color: var(--amber); text-decoration: none; }
 .perk-pop-credit a:hover { text-decoration: underline; }
+
+/* ---- Perk Lab -------------------------------------------------------- */
+.lab-entry { margin: 2px 0 14px; }
+.lab-list { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.lab-row {
+  border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; background: rgba(255, 255, 255, 0.015);
+}
+.lab-row.hidden { display: none; }
+.lab-row.source-unrated { border-left-color: var(--amber); }
+.lab-row.source-yours { border-left-color: #67e08c; }
+.lab-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lab-name { font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+.lab-source { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.lab-row.source-unrated .lab-source { color: var(--amber); }
+.lab-row.source-yours .lab-source { color: #67e08c; }
+.lab-desc { margin: 6px 0 10px; font-size: 0.82rem; line-height: 1.5; color: var(--muted); }
+.lab-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; font-size: 0.8rem; color: var(--muted); }
+.lab-controls label { display: inline-flex; align-items: center; gap: 6px; }
+.lab-controls .lab-input {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); color: var(--ink);
+  border-radius: 6px; padding: 4px 8px; font-size: 0.8rem;
+}
+.lab-controls .lab-input option { background: #161a22; color: var(--ink); }
+.lab-check input { accent-color: #67e08c; }
 .tile-why { color: var(--muted); font-size: 0.76rem; font-style: italic; margin-top: 8px; }
 .tile-verdict {
   margin-top: 8px; display: inline-block; font-size: 0.7rem; font-weight: 700;

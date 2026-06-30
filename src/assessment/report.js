@@ -133,6 +133,31 @@ export const PERKS_REC = {
   'Lead from Light': { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'Orbs of Power bank stacks; kills spend them for faster Special ammo — economy and uptime' },
   Meganeura: { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'precision kills detonate the target for elemental damage — a Dragonfly-style add-clear burst' },
 };
+// ---- Player perk overrides ("Perk Lab") -----------------------------------
+// The player's own expert ratings beat the built-in model. Stored in
+// localStorage by main.js and merged over PERKS_REC at runtime, so the engine
+// reflects their judgement for every perk they review.
+let OVERRIDES = {};
+
+export function setPerkOverrides(map) {
+  OVERRIDES = map && typeof map === 'object' ? map : {};
+}
+
+// Merged perk record: player override fields win, falling back to the built-in.
+export function getPerk(name) {
+  const base = PERKS_REC[name];
+  const ov = OVERRIDES[name];
+  if (!base && !ov) return undefined;
+  return { ...(base || {}), ...(ov || {}) };
+}
+
+export function isPerkBuiltIn(name) {
+  return !!PERKS_REC[name];
+}
+
+export function hasPerkOverride(name) {
+  return Object.prototype.hasOwnProperty.call(OVERRIDES, name);
+}
 
 // How to describe the player's own tendency on each axis pole.
 const PHRASE = {

@@ -2,7 +2,7 @@
 // Grades each roll using the shared perk model (power tiers + roles + axes) and
 // the player's Doctrine profile: a roll's value in a mode = perk power, boosted
 // by how well it fits the player's playstyle and (in PvE) their focus.
-import { PERKS_REC } from '../assessment/report.js';
+import { PERKS_REC, getPerk } from '../assessment/report.js';
 import { combined } from '../assessment/profile.js';
 
 const MODES = ['pve', 'pvp'];
@@ -177,7 +177,7 @@ const FOCUS_WORD = { addclear: 'add-clear', dps: 'boss-DPS', survival: 'survival
 function rollWhy(roll, dir, focus) {
   const mode = (roll.keepModes?.[0] || 'PvE').toLowerCase();
   const d = dir[mode] || dir.pve;
-  const recd = roll.traits.map((t) => PERKS_REC[t]).filter(Boolean);
+  const recd = roll.traits.map((t) => getPerk(t)).filter(Boolean);
   const builds = recd.filter(isBuild);
   const standalone = recd.filter((p) => !isBuild(p));
   const clauses = [];
@@ -247,7 +247,7 @@ function perkTier(score) {
 }
 
 function perkPersonalScore(name, mode, dir, focus, partners) {
-  const p = PERKS_REC[name];
+  const p = getPerk(name);
   const reasons = [];
   let s = 0;
   if (p) {
@@ -311,7 +311,7 @@ function rollPersonal(traits, mode, dir, focus) {
     const r = perkPersonalScore(traits[i], mode, dir, focus, partners);
     score += r.score;
     if (r.recognized) recognized += 1;
-    const p = PERKS_REC[traits[i]];
+    const p = getPerk(traits[i]);
     if (p?.element && r.score > elementScore) {
       elementScore = r.score;
       element = p.element;
