@@ -392,6 +392,8 @@ html, body {
 .lab-row.source-unrated { border-left-color: var(--amber); }
 .lab-row.source-yours { border-left-color: #67e08c; }
 .lab-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lab-perk-head { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.lab-icon { width: 26px; height: 26px; border-radius: 5px; flex: 0 0 auto; background: rgba(255, 255, 255, 0.05); }
 .lab-name { font-weight: 700; color: var(--ink); font-size: 0.95rem; }
 .lab-source { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .lab-row.source-unrated .lab-source { color: var(--amber); }
@@ -405,6 +407,12 @@ html, body {
 }
 .lab-controls .lab-input option { background: #161a22; color: var(--ink); }
 .lab-check input { accent-color: #67e08c; }
+.lab-legend { margin: 6px 0 14px; border: 1px solid var(--line); border-radius: 10px; padding: 2px 12px; background: rgba(255, 255, 255, 0.015); }
+.lab-legend summary { cursor: pointer; font-size: 0.82rem; font-weight: 700; color: var(--ink); padding: 9px 0; }
+.lab-legend-body { font-size: 0.8rem; color: var(--muted); line-height: 1.5; padding-bottom: 8px; }
+.lab-legend-body p { margin: 6px 0 2px; }
+.lab-legend-body ul { margin: 4px 0 10px; padding-left: 18px; }
+.lab-legend-body b { color: var(--ink); }
 .tile-why { color: var(--muted); font-size: 0.76rem; font-style: italic; margin-top: 8px; }
 .tile-verdict {
   margin-top: 8px; display: inline-block; font-size: 0.7rem; font-weight: 700;

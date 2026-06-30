@@ -3,11 +3,11 @@
 // two split by mode (tempo/range) because players fight PvE and PvP differently.
 // Each answer nudges axes toward pole A (+) or pole B (-).
 export const AXES = {
-  tempo: { a: 'Slayer', b: 'Anchor', desc: 'how you take space' },
-  range: { a: 'Knife-fighter', b: 'Sightline', desc: 'where you win fights' },
-  engine: { a: 'Architect', b: 'Gunslinger', desc: 'what wins the fight' },
-  cadence: { a: 'Burst', b: 'Sustain', desc: 'your damage rhythm' },
-  soul: { a: 'Showtime', b: 'Bedrock', desc: 'what you optimize for' },
+  tempo: { a: 'Slayer', b: 'Anchor', desc: 'How you take space' },
+  range: { a: 'Knife-fighter', b: 'Sightline', desc: 'Where you win fights' },
+  engine: { a: 'Architect', b: 'Gunslinger', desc: 'What wins the fight' },
+  cadence: { a: 'Burst', b: 'Sustain', desc: 'Your damage rhythm' },
+  soul: { a: 'Showtime', b: 'Bedrock', desc: 'What you optimize for' },
 };
 
 export const SHARED_AXES = ['cadence', 'soul'];

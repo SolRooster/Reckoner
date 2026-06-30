@@ -20,6 +20,8 @@ const app = document.querySelector('#app');
 
 // Clarity perk descriptions (lowercased name -> text), loaded at scan time.
 let clarityByName = new Map();
+// Perk name -> Bungie icon path, captured from the manifest during the scan.
+let perkIconByName = new Map();
 // The inputs of the most recent vault scan, so the Perk Lab can re-grade
 // instantly after the player changes a rating (no refetch needed).
 let lastScan = null;
@@ -27,7 +29,7 @@ let lastScan = null;
 boot();
 
 async function boot() {
-  setPerkOverrides(loadPerkOverrides());
+  setPerkOverrides(migratePerkOverrides(loadPerkOverrides()));
   try {
     await handleRedirect();
   } catch (e) {
@@ -177,6 +179,12 @@ function readFrame(def, socketInfo, items) {
   return (plugHash && items[plugHash]?.name) || '';
 }
 
+// Enhanced perks are named "{Perk} Enhanced" in the manifest; strip the suffix
+// so enhanced and base perks unify into one entry everywhere.
+function normalizePerkName(name) {
+  return String(name || '').replace(/\s+Enhanced$/i, '').trim();
+}
+
 // Plug categories that are tunable hardware (barrel / mag / battery / etc.).
 // Origin traits, mods, masterworks and ornaments are deliberately excluded.
 const HARDWARE_CATS = ['barrels', 'magazines', 'batteries', 'blades', 'scopes', 'bowstrings', 'arrows', 'grips', 'tubes', 'hafts', 'guards', 'stocks', 'launcher'];
@@ -195,16 +203,25 @@ function readPerks(def, socketInfo, reusableInfo, items) {
   const hardware = [];
 
   // Every available plug name in a socket (the full roll pool). Falls back to
-  // the socketed plug for fixed random rolls.
-  const optionsAt = (idx, socketedHash, socketedName) => {
+  // the socketed plug for fixed random rolls. Names are normalized (the
+  // " Enhanced" suffix stripped) so enhanced and base perks unify, and we
+  // capture each perk's icon for the Perk Lab.
+  const optionsAt = (idx, socketedHash) => {
     let hashes = (reusable[idx] || []).map((p) => p.plugItemHash).filter(Boolean);
     if (!hashes.length && socketedHash) hashes = [socketedHash];
-    let names = hashes.map((h) => items[h]?.name).filter(Boolean);
-    if (socketedName) {
-      names = names.filter((n) => n !== socketedName);
-      names.unshift(socketedName);
+    const ordered = socketedHash ? [socketedHash, ...hashes.filter((h) => h !== socketedHash)] : hashes;
+    const out = [];
+    const seen = new Set();
+    for (const h of ordered) {
+      const def = items[h];
+      if (!def?.name) continue;
+      const name = normalizePerkName(def.name);
+      if (seen.has(name)) continue;
+      seen.add(name);
+      out.push(name);
+      if (def.icon && !perkIconByName.has(name)) perkIconByName.set(name, def.icon);
     }
-    return [...new Set(names)];
+    return out;
   };
 
   for (const idx of indexes) {
@@ -213,12 +230,12 @@ function readPerks(def, socketInfo, reusableInfo, items) {
     const pc = socketedDef?.plugCategory || '';
     if (pc.includes('trackers')) continue; // skip Kill Tracker noise
     if (pc === 'frames') {
-      const names = optionsAt(idx, socketedHash, socketedDef?.name);
+      const names = optionsAt(idx, socketedHash);
       if (names.length) columns.push(names); // the two random trait columns
       continue;
     }
     if (HARDWARE_CATS.some((h) => pc.includes(h))) {
-      const names = optionsAt(idx, socketedHash, socketedDef?.name);
+      const names = optionsAt(idx, socketedHash);
       if (names.length) hardware.push(names);
     }
   }
@@ -584,6 +601,23 @@ function savePerkOverrides(map) {
   setPerkOverrides(map);
 }
 
+// One-time migration: fold any "{Perk} Enhanced" ratings onto the base name so
+// they aren't orphaned now that perk names are normalized. Base ratings win ties.
+function migratePerkOverrides(map) {
+  const out = {};
+  let changed = false;
+  const keys = Object.keys(map).sort(
+    (a, b) => (/\sEnhanced$/i.test(a) ? 1 : 0) - (/\sEnhanced$/i.test(b) ? 1 : 0)
+  );
+  for (const key of keys) {
+    const base = normalizePerkName(key);
+    if (base !== key) changed = true;
+    if (!(base in out)) out[base] = map[key];
+  }
+  if (changed) localStorage.setItem(PERK_OVERRIDES_KEY, JSON.stringify(out));
+  return out;
+}
+
 // Best-effort element guess from a Clarity description, so the player doesn't
 // have to tag it by hand.
 function deriveElement(desc) {
@@ -595,7 +629,8 @@ function deriveElement(desc) {
 }
 
 const LAB_ROLES = ['addclear', 'dps', 'survival', 'economy', 'utility'];
-const LAB_POWER = ['None', 'Niche', 'Strong', 'Top'];
+const ROLE_LABEL = { addclear: 'Add-clear', dps: 'DPS', survival: 'Survival', economy: 'Economy', utility: 'Utility' };
+const LAB_POWER = ['None', 'Situational', 'Strong', 'Top'];
 
 function renderPerkLab(names) {
   const overrides = loadPerkOverrides();
@@ -610,17 +645,24 @@ function renderPerkLab(names) {
       (label, v) => `<option value="${v}"${v === val ? ' selected' : ''}>${label}</option>`
     ).join('')}</select>`;
   const roleSel = (val) =>
-    `<select class="lab-input" data-field="role"><option value="">role…</option>${LAB_ROLES.map(
-      (r) => `<option value="${r}"${r === val ? ' selected' : ''}>${r}</option>`
+    `<select class="lab-input" data-field="role"><option value="">Role\u2026</option>${LAB_ROLES.map(
+      (r) => `<option value="${r}"${r === val ? ' selected' : ''}>${ROLE_LABEL[r]}</option>`
     ).join('')}</select>`;
 
   const row = (name) => {
     const cur = overrides[name] || getPerk(name) || {};
     const source = hasPerkOverride(name) ? 'yours' : isPerkBuiltIn(name) ? 'built-in' : 'unrated';
     const desc = clarityByName.get(name.toLowerCase()) || 'No community description on file.';
+    const icon = perkIconByName.get(name);
     return `<div class="lab-row source-${source}" data-name="${escapeHtml(name)}">
       <div class="lab-top">
-        <span class="lab-name">${escapeHtml(name)}</span>
+        <span class="lab-perk-head">${
+          icon
+            ? `<img class="lab-icon" src="https://www.bungie.net${escapeHtml(
+                icon
+              )}" alt="" loading="lazy" onerror="this.style.display='none'"/>`
+            : ''
+        }<span class="lab-name">${escapeHtml(name)}</span></span>
         <span class="lab-source">${source}</span>
       </div>
       <p class="lab-desc">${escapeHtml(desc)}</p>
@@ -630,7 +672,7 @@ function renderPerkLab(names) {
         ${roleSel(cur.role || '')}
         <label class="lab-check"><input type="checkbox" class="lab-input" data-field="build"${
           cur.build ? ' checked' : ''
-        }/> build</label>
+        }/> Build</label>
       </div>
     </div>`;
   };
@@ -643,6 +685,27 @@ function renderPerkLab(names) {
     <section class="dash">
       <h2>Perk Lab</h2>
       <p class="subtle">Rate any perk in your vault and it overrides my model everywhere. ${needRating} of ${sorted.length} still need a rating — unrated ones are up top. Changes save instantly; “Apply” re-grades your vault.</p>
+      <details class="lab-legend">
+        <summary>How to rate — tiers &amp; roles</summary>
+        <div class="lab-legend-body">
+          <p><b>Power</b> (PvE &amp; PvP) — rate as if the perk is on a weapon that uses it well; weapon rarity doesn’t lower it.</p>
+          <ul>
+            <li><b>None</b> — does nothing useful in this mode.</li>
+            <li><b>Situational</b> — works only in a specific situation or setup, or a minor benefit.</li>
+            <li><b>Strong</b> — reliable, high-value; a real god-roll contender.</li>
+            <li><b>Top</b> — best-in-class; defines the gun for this mode.</li>
+          </ul>
+          <p><b>Role</b> — the perk’s main job (pick the dominant one):</p>
+          <ul>
+            <li><b>Add-clear</b> — kills or clears groups of minor enemies.</li>
+            <li><b>DPS</b> — primarily boosts damage numbers.</li>
+            <li><b>Survival</b> — keeps you alive, including protective crowd-control (blind, freeze, suppress).</li>
+            <li><b>Economy</b> — feeds the gun (ammo) or feeds your build (orbs / elemental pickups).</li>
+            <li><b>Utility</b> — gunfeel, aim and positioning (stability, range, handling, ADS).</li>
+          </ul>
+          <p><b>Build</b> — toggle on when the perk fuels a subclass or ability loop (Architect synergy).</p>
+        </div>
+      </details>
       <input id="lab-search" class="vault-search" type="search" placeholder="Find a perk…" />
       <div class="lab-list" id="lab-list">${sorted.map(row).join('')}</div>
       <div class="bulk-bar"><button id="lab-apply" class="btn-primary">Apply &amp; re-grade</button></div>
