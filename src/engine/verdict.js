@@ -423,9 +423,15 @@ export function gradeGun(group, usageKills, profile) {
   // "held for Stasis builds" note always agree. Skip a copy whose element roll
   // just duplicates a keeper's roll.
   const keeperRolls = new Set();
+  const keeperElementScore = {};
   for (const mode of MODES) {
     const k = best[mode];
-    if (k) keeperRolls.add(rollSig(k[mode]?.traits || k.roll));
+    if (!k) continue;
+    const r = k[mode];
+    keeperRolls.add(rollSig(r?.traits || k.roll));
+    if (r?.element) {
+      keeperElementScore[r.element] = Math.max(keeperElementScore[r.element] || 0, r.score || 0);
+    }
   }
   for (const c of copies) {
     if (c.keep) continue;
@@ -443,6 +449,9 @@ export function gradeGun(group, usageKills, profile) {
     if (c.keep || !c._elementPick) continue;
     const { element, traits, score } = c._elementPick;
     if (keeperRolls.has(rollSig(traits))) continue;
+    // A keeper that already builds this element at least as well makes a separate
+    // Flex redundant — that copy just shards behind the better keeper.
+    if ((keeperElementScore[element] || 0) >= score) continue;
     if (score < FLEX_FLOOR) continue;
     const cur = flexByElement[element];
     if (!cur || score > cur.score) flexByElement[element] = { copy: c, score };
