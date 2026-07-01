@@ -372,6 +372,7 @@ html, body {
   color: var(--muted); margin-bottom: 5px;
 }
 .perk-pop-label.for-you { color: #67e08c; }
+.perk-pop-label.community { color: #6cb8ff; }
 .perk-pop-text { margin: 0; font-size: 0.88rem; line-height: 1.55; color: var(--ink); }
 .perk-pop-text.subtle { color: var(--muted); }
 .perk-pop-credit {

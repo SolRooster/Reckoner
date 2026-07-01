@@ -543,6 +543,7 @@ function perkChip(pk, recSet) {
 function showPerkCard(name, tier, why) {
   closePerkCard();
   const desc = clarityByName.get((name || '').toLowerCase());
+  const community = getPerk(name)?.community;
   const badge =
     tier && tier !== '?' ? `<span class="perk-tier t${escapeHtml(tier)}">${escapeHtml(tier)}</span>` : '';
   const research = desc
@@ -555,6 +556,11 @@ function showPerkCard(name, tier, why) {
         why
       )}</p></div>`
     : '';
+  const communitySec = community
+    ? `<div class="perk-pop-section"><div class="perk-pop-label community">What players run</div><p class="perk-pop-text">${escapeHtml(
+        community
+      )}</p></div>`
+    : '';
   const el = document.createElement('div');
   el.className = 'perk-pop-backdrop';
   el.id = 'perk-pop';
@@ -564,6 +570,7 @@ function showPerkCard(name, tier, why) {
       <div class="perk-pop-head"><span class="perk-pop-name">${escapeHtml(name)}</span>${badge}</div>
       ${research}
       ${forYou}
+      ${communitySec}
       <div class="perk-pop-credit">Community Research by
         <a href="https://d2clarity.com" target="_blank" rel="noopener">Clarity</a></div>
     </div>`;

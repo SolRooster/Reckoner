@@ -224,6 +224,11 @@ const SYNERGY = [
   ['Pugilist', 'Surrounded', 1.5, 'brawl in the thick of it'],
   ['Physic', 'Circle of Life', 1.5, 'one heal triggers both restoration and a damage spike'],
   ['Crystalline Corpsebloom', 'Meganeura', 1.5, 'crystals and precision pops blanket the room'],
+  ['Zen Moment', 'Kill Clip', 2, 'stability to land the shots, damage to finish \u2014 a Rapid-Fire pulse staple'],
+  ['Keep Away', 'Opening Shot', 2, 'own the range and open every fight from distance'],
+  ['Keep Away', 'Headseeker', 2, 'space them out, then convert body shots to head kills'],
+  ['Keep Away', 'Precision Instrument', 1.5, 'reward pure aim at the distance you control'],
+  ['Opening Shot', 'Snapshot Sights', 1.5, 'snap on target and land the opening shot'],
 ];
 
 function synergyBetween(a, b) {

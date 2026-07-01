@@ -59,11 +59,11 @@ export const PERKS_REC = {
   // --- PvP dueling (role: utility for PvE purposes) ---
   'Kill Clip': { axes: { tempo: 1, cadence: 1 }, pve: 1, pvp: 3, role: 'dps', note: 'reload after a kill for a damage spike — a Crucible one-tap enabler' },
   Desperado: { axes: { tempo: 1 }, pve: 1, pvp: 3, role: 'utility', note: 'precision kills crank pulse-rifle fire rate' },
-  Headseeker: { axes: { range: -1 }, pve: 0, pvp: 3, role: 'utility', note: 'body shots boost your follow-up headshot — pulse cornerstone' },
-  'Eye of the Storm': { axes: { soul: 1, tempo: 1 }, pve: 0, pvp: 3, role: 'utility', note: 'gets better the lower your health — clutch perk' },
+  Headseeker: { axes: { range: -1 }, pve: 0, pvp: 3, role: 'utility', community: 'The pulse-rifle cornerstone — body-to-head damage that secures fast kills; run on nearly every meta pulse.', note: 'body shots boost your follow-up headshot — pulse cornerstone' },
+  'Eye of the Storm': { axes: { soul: 1, tempo: 1 }, pve: 0, pvp: 3, role: 'utility', community: 'Clutch-fighting favorite — gets stronger the lower your health; beloved on hand cannons.', note: 'gets better the lower your health — clutch perk' },
   Rampage: { axes: { tempo: 2, cadence: 1 }, pve: 1, pvp: 2, role: 'dps', note: 'stacks damage as you chain kills — keeps you on offense' },
   Swashbuckler: { axes: { tempo: 2, range: 1 }, pve: 2, pvp: 2, role: 'dps', note: 'melee or weapon kills spike damage — a close-range monster' },
-  'Opening Shot': { axes: { range: -2, soul: -1, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'first shot of a fight gets bonus range and accuracy' },
+  'Opening Shot': { axes: { range: -2, soul: -1, engine: -1 }, pve: 0, pvp: 2, role: 'utility', community: 'The community’s default PvP opener — first-shot range and accuracy on hand cannons and scouts.', note: 'first shot of a fight gets bonus range and accuracy' },
   Rangefinder: { axes: { range: -2, engine: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'extends effective range while aiming' },
   'Precision Instrument': { axes: { range: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'consecutive precision hits ramp damage — rewards pure aim (pairs with Zen Moment)' },
   'Lone Wolf': { axes: { range: -1, soul: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'solo bonus to range, handling and reload — for the lone-wolf duelist' },
@@ -74,10 +74,10 @@ export const PERKS_REC = {
   Kickstart: { axes: { tempo: 2 }, pve: 1, pvp: 2, role: 'utility', note: 'slide into a faster, harder-hitting charged shot' },
   'Tap the Trigger': { axes: { tempo: 1, range: 1 }, pve: 0, pvp: 2, role: 'utility', note: 'tightens the first burst — for fusions and shotguns' },
   'Explosive Payload': { axes: { range: -1, soul: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'rounds deal bonus area damage — consistent chip at range' },
-  'Snapshot Sights': { axes: { range: -1, soul: 1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'lightning-fast ADS — duels and quickscopes' },
+  'Snapshot Sights': { axes: { range: -1, soul: 1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', community: 'A PvP staple for fast ADS — aggressive duelists and quickscope snipers.', note: 'lightning-fast ADS — duels and quickscopes' },
 
   // --- Gunfeel / control (Gunslinger-friendly, role: utility) ---
-  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'damage dealt tightens recoil — pure control, especially strong on controller' },
+  'Zen Moment': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', community: 'Duelist control perk — players pair it with Kill Clip on Rapid-Fire pulses (e.g. Horror’s Least).', note: 'damage dealt tightens recoil — pure control, especially strong on controller' },
   'Rapid Hit': { axes: { range: -1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'precision hits boost reload and stability' },
   'Dynamic Sway Reduction': { axes: { soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'sustained fire tightens accuracy — a feel perk' },
   'Perpetual Motion': { axes: { tempo: 1, soul: -1, engine: -1 }, pve: 1, pvp: 2, role: 'utility', note: 'stat boost while you keep moving' },
@@ -132,6 +132,11 @@ export const PERKS_REC = {
   'Enlightened Action': { axes: { engine: -1 }, pve: 2, pvp: 1, role: 'economy', note: 'weapon hits stack up handling and reload (to +50) — smooth, self-sustaining gunfeel' },
   'Lead from Light': { axes: {}, pve: 2, pvp: 0, role: 'economy', note: 'Orbs of Power bank stacks; kills spend them for faster Special ammo — economy and uptime' },
   Meganeura: { axes: {}, pve: 2, pvp: 1, role: 'addclear', note: 'precision kills detonate the target for elemental damage — a Dragonfly-style add-clear burst' },
+  // --- Community PvP staples (what players actually run) ---
+  'Keep Away': { axes: { range: -2 }, pve: 0, pvp: 3, role: 'utility', community: 'A top PvP spacing perk — players pair it with Opening Shot, Headseeker or Precision Instrument on ranged duelists.', note: 'bonus range and reload while no enemies are close — rewards fighting at your spacing' },
+  Encore: { axes: { range: -1 }, pve: 1, pvp: 2, role: 'utility', community: 'Ranked-play favorite — stacks range and stability the longer you stay on target.', note: 'precision hits stack bonus range and stability — for extended ranged fights' },
+  'Delicate Tuning': { axes: { range: -1 }, pve: 0, pvp: 2, role: 'utility', note: 'balances range and stability — smooths a gun out for consistent dueling' },
+  'Light Touch': { axes: {}, pve: 1, pvp: 2, role: 'utility', note: 'precision hits boost handling and cut recoil — keeps the gun snappy' },
 };
 // ---- Player perk overrides ("Perk Lab") -----------------------------------
 // The player's own expert ratings beat the built-in model. Stored in
