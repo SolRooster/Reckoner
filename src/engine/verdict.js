@@ -417,31 +417,44 @@ export function gradeGun(group, usageKills, profile) {
     }
   }
 
-  // Flex: hold the single best non-keeper copy per element, ranked by the same
-  // personal score — so the strongest build roll actually wins the slot. Skip
-  // only copies whose roll DUPLICATES a keeper's roll; a genuinely different
-  // build of the same element (e.g. a second, distinct Void roll) still flexes.
+  // Flex: hold the single best non-keeper copy per element. The flex is about an
+  // ELEMENT build, so we pick the copy's best element-BEARING roll and display
+  // THAT roll — so the tag ("Flex (Stasis)"), the highlighted perks, and the
+  // "held for Stasis builds" note always agree. Skip a copy whose element roll
+  // just duplicates a keeper's roll.
   const keeperRolls = new Set();
   for (const mode of MODES) {
     const k = best[mode];
     if (k) keeperRolls.add(rollSig(k[mode]?.traits || k.roll));
   }
-  const flexByElement = {};
   for (const c of copies) {
     if (c.keep) continue;
-    const el = c.pve?.element || c.pvp?.element;
-    if (!el) continue;
-    if (keeperRolls.has(rollSig(c.traits))) continue;
-    const sc = Math.max(c.pve?.score || 0, c.pvp?.score || 0);
-    if (sc < FLEX_FLOOR) continue;
-    const cur = flexByElement[el];
-    if (!cur || sc > cur.score) flexByElement[el] = { copy: c, score: sc };
+    let pick = null;
+    for (const mode of MODES) {
+      const r = c[mode];
+      if (r?.element && (!pick || r.score > pick.score)) {
+        pick = { element: r.element, traits: r.traits, score: r.score, mode };
+      }
+    }
+    c._elementPick = pick;
+  }
+  const flexByElement = {};
+  for (const c of copies) {
+    if (c.keep || !c._elementPick) continue;
+    const { element, traits, score } = c._elementPick;
+    if (keeperRolls.has(rollSig(traits))) continue;
+    if (score < FLEX_FLOOR) continue;
+    const cur = flexByElement[element];
+    if (!cur || score > cur.score) flexByElement[element] = { copy: c, score };
   }
   for (const element of Object.keys(flexByElement)) {
     const c = flexByElement[element].copy;
+    const pick = c._elementPick;
     c.flex = true;
     c.tier = 'flex';
     c.flexElement = element;
+    c.traits = pick.traits; // show the roll that justifies the element flex
+    c.displayMode = pick.mode;
     c.verdict = `Flex (${ELEMENT_LABEL[element]})`;
   }
 
