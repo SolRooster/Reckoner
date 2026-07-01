@@ -641,7 +641,8 @@ const LAB_POWER = ['None', 'Situational', 'Strong', 'Top'];
 
 function renderPerkLab(names) {
   const overrides = loadPerkOverrides();
-  const rated = (n) => !!getPerk(n);
+  const isYours = (n) => Object.prototype.hasOwnProperty.call(overrides, n);
+  const rated = (n) => isYours(n) || isPerkBuiltIn(n);
   const sorted = [...new Set(names)].sort(
     (a, b) => (rated(a) ? 1 : 0) - (rated(b) ? 1 : 0) || a.localeCompare(b)
   );
@@ -658,7 +659,7 @@ function renderPerkLab(names) {
 
   const row = (name) => {
     const cur = overrides[name] || getPerk(name) || {};
-    const source = hasPerkOverride(name) ? 'yours' : isPerkBuiltIn(name) ? 'built-in' : 'unrated';
+    const source = isYours(name) ? 'yours' : isPerkBuiltIn(name) ? 'built-in' : 'unrated';
     const desc = clarityByName.get(name.toLowerCase()) || 'No community description on file.';
     const icon = perkIconByName.get(name);
     return `<div class="lab-row source-${source}" data-name="${escapeHtml(name)}">

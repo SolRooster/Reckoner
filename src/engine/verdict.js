@@ -360,6 +360,10 @@ export function gradeGun(group, usageKills, profile) {
 
   const KEEP_FLOOR = 8;
   const FLEX_FLOOR = 8;
+  // A same-element Flex is allowed unless a keeper builds that element clearly
+  // better (by more than this margin — roughly a tier). So a co-equal, distinct
+  // build of the same element still flexes; only a clearly weaker one shards.
+  const FLEX_ELEMENT_MARGIN = 4;
 
   const copies = group.copies.map((c) => {
     const cols = c.columns && c.columns.length ? c.columns : [c.roll || []];
@@ -449,9 +453,10 @@ export function gradeGun(group, usageKills, profile) {
     if (c.keep || !c._elementPick) continue;
     const { element, traits, score } = c._elementPick;
     if (keeperRolls.has(rollSig(traits))) continue;
-    // A keeper that already builds this element at least as well makes a separate
-    // Flex redundant — that copy just shards behind the better keeper.
-    if ((keeperElementScore[element] || 0) >= score) continue;
+    // A keeper that already builds this element CLEARLY better makes a separate
+    // Flex redundant — that copy shards behind it. But a comparable, distinct
+    // build of the same element still earns a Flex slot.
+    if ((keeperElementScore[element] || 0) - score > FLEX_ELEMENT_MARGIN) continue;
     if (score < FLEX_FLOOR) continue;
     const cur = flexByElement[element];
     if (!cur || score > cur.score) flexByElement[element] = { copy: c, score };
